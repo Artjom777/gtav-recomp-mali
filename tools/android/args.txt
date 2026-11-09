@@ -1,40 +1,22 @@
-# Mali-G720 MC7 / Dimensity 8400-Ultra Hardware-Tailored Rendering Configuration
-env:GTAV_NATIVE_FETCH_RESOLVE=0
---headless=true
+# Mali-G720 MC7 / Dimensity 8400 Hardware-Tailored Rendering Configuration
+--headless=false
 --log_level=info
---gtav_native=on
---gpu_skip_rendering=true
---gpu_skip_rendering_lag_ms=4
+--gtav_native=off
+--gpu_skip_rendering=false
 --vsync=false
---gtav_native_vsync=true
---gtav_fps_limit=30
---gtav_native_fps=true
---window_presenter=false
+--window_presenter=true
 
-# Mali Architecture Compatibility (Geometry, Atomics, Sparse)
---gtav_native_rect_gs=false
---gtav_native_fetch_resolves=false
+# Mali Architecture Compatibility (Geometry, Atomics, Queries, Memory)
+--occlusion_query_enable=false
+--query_occlusion_fake_sample_count=1000
 --vulkan_require_vertex_pipeline_stores_and_atomics=false
 --vulkan_require_geometry_shader=false
 --vulkan_require_fill_mode_non_solid=false
 --vulkan_sparse_shared_memory=false
---gtav_native_point_float32=true
---gtav_native_draw_clears=true
-
-# Frame Presentation & Pipeline Safety (prevent gray screen lockup)
---gtav_native_hold_lost_frames=false
---gtav_native_async_pipelines=false
---gtav_native_pipeline_wait_ms=60.0
---gtav_native_render_scale=0.50
---gtav_native_decode_bc=true
---gtav_native_texture_budget_mb=768
---gtav_android_main_prime=true
+--gpu_allow_invalid_fetch_constants=true
+--gpu_plugin=xenos
 
 # Audio Buffers (prevent stuttering)
 --audio_maxqframes=32
 --audio_device_frames=512
 --audio_force_stereo=true
-
-# Shaders
---gtav_native_save_missing_shaders=true
---gtav_native_compile=false
