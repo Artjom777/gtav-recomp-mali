@@ -15,6 +15,15 @@
 
 #include <cstdio>
 #include <string>
+#include <memory>
+#include <thread>
+#include <chrono>
+
+#include <rex/runtime.h>
+#include <rex/ui/imgui_dialog.h>
+#include <rex/ui/imgui_drawer.h>
+#include <rex/ui/windowed_app_context.h>
+#include <imgui.h>
 
 namespace {
 
@@ -40,8 +49,53 @@ void LogCrash(const std::string& what) {
 void Fail(const std::string& what) {
   LogCrash(what);
   SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "GTA V Error", what.c_str(), nullptr);
-  // Allow time for the dialog to be displayed on screen before SDLActivity finishes
   SDL_Delay(8000);
+}
+
+using TouchDrawFn = void (*)(ImDrawList*, float, float);
+using TouchVisibleFn = bool (*)();
+
+static TouchDrawFn g_touch_draw = nullptr;
+static TouchVisibleFn g_touch_visible = nullptr;
+
+class TouchOverlayDialog : public rex::ui::ImGuiDialog {
+ public:
+  TouchOverlayDialog(rex::ui::ImGuiDrawer* drawer) : rex::ui::ImGuiDialog(drawer) {}
+  void OnDraw(ImGuiIO& io) override {
+    if (!g_touch_draw) {
+      g_touch_draw = reinterpret_cast<TouchDrawFn>(dlsym(RTLD_DEFAULT, "_ZN4gtav6native5touch4DrawEP10ImDrawListff"));
+      g_touch_visible = reinterpret_cast<TouchVisibleFn>(dlsym(RTLD_DEFAULT, "_ZN4gtav6native5touch7VisibleEv"));
+      __android_log_print(ANDROID_LOG_INFO, "gtav", "[TouchOverlay] Resolved: draw=%p, visible=%p", g_touch_draw, g_touch_visible);
+    }
+    if (g_touch_draw) {
+      g_touch_draw(ImGui::GetForegroundDrawList(), io.DisplaySize.x, io.DisplaySize.y);
+    }
+  }
+};
+
+static std::unique_ptr<TouchOverlayDialog> g_touch_dialog;
+
+void StartTouchOverlayWatcher() {
+  std::thread([]() {
+    __android_log_print(ANDROID_LOG_INFO, "gtav", "[TouchWatcher] thread started");
+    rex::Runtime* rt = nullptr;
+    while (!rt) {
+      usleep(50000); // 50ms
+      rt = rex::Runtime::instance();
+    }
+    __android_log_print(ANDROID_LOG_INFO, "gtav", "[TouchWatcher] found Runtime=%p", rt);
+    rex::ui::ImGuiDrawer* drawer = nullptr;
+    while (!drawer) {
+      usleep(50000);
+      drawer = rt->imgui_drawer();
+    }
+    __android_log_print(ANDROID_LOG_INFO, "gtav", "[TouchWatcher] found ImGuiDrawer=%p, posting to UI thread", drawer);
+    rt->app_context()->CallInUIThreadDeferred([drawer]() {
+      __android_log_print(ANDROID_LOG_INFO, "gtav", "[TouchWatcher] creating TouchOverlayDialog on UI thread...");
+      g_touch_dialog = std::make_unique<TouchOverlayDialog>(drawer);
+      __android_log_print(ANDROID_LOG_INFO, "gtav", "[TouchWatcher] TouchOverlayDialog registered successfully! (%p)", g_touch_dialog.get());
+    });
+  }).detach();
 }
 
 }  // namespace
@@ -90,6 +144,7 @@ extern "C" __attribute__((visibility("default"))) int SDL_main(int argc, char* a
     return 1;
   }
 
-  __android_log_print(ANDROID_LOG_INFO, "gtav", "Found real SDL_main at %p, executing game...", real_main);
+  __android_log_print(ANDROID_LOG_INFO, "gtav", "Found real SDL_main at %p, launching TouchWatcher and starting game...", real_main);
+  StartTouchOverlayWatcher();
   return real_main(argc, argv);
 }
