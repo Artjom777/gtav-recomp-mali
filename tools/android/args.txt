@@ -1,4 +1,4 @@
-# Mali-G720 MC7 / Dimensity 8400 Hardware-Tailored Rendering Configuration
+# Mali-G720 MC7 / Dimensity 8400 Optimized Gameplay Configuration
 --headless=false
 --log_level=info
 --gtav_native=off
@@ -15,6 +15,24 @@
 --vulkan_sparse_shared_memory=false
 --gpu_allow_invalid_fetch_constants=true
 --gpu_plugin=xenos
+
+# Performance & Multithreaded Pipeline Creation (Dimensity 8400 8-core)
+--vulkan_pipeline_creation_threads=8
+--async_shader_compilation=true
+--vulkan_async_skip_incomplete_frames=false
+--vulkan_submit_on_primary_buffer_end=true
+--vulkan_dynamic_rendering=true
+--gpu_idle_spins=0
+
+# Lighting, Luminance & Exposure Readbacks (fixes dark scene / graphical bugs)
+--readback_resolve=fast
+--vulkan_readback_resolve=true
+--readback_memexport=true
+--vulkan_readback_memexport=true
+
+# Touch Controls CVARs
+--gtav_touch_controls=true
+--gtav_touch_scale=1.2
 
 # Audio Buffers (prevent stuttering)
 --audio_maxqframes=32
