@@ -1,12 +1,20 @@
-# Mali-G720 MC7 / Dimensity 8400 Optimized Gameplay Configuration
+# POCO X7 Pro (Mali-G720 MC7 / MediaTek Dimensity 8400) High-Performance 30 FPS Config
 --headless=false
 --log_level=info
 --gtav_native=off
 --gpu_skip_rendering=false
---vsync=false
+--gpu_skip_rendering_lag_ms=0
 --window_presenter=true
 
-# Mali Compatibility & Shader Fixes
+# Smooth Frame Pacing & VSync
+--vsync=true
+--gtav_fps_limit=30
+--gtav_audio_unsync=false
+--vulkan_allow_present_mode_immediate=false
+--vulkan_allow_present_mode_mailbox=false
+--vulkan_allow_present_mode_fifo_relaxed=false
+
+# Mali-G720 Compatibility & Crash Prevention
 --occlusion_query_enable=false
 --query_occlusion_fake_sample_count=1000
 --vulkan_require_vertex_pipeline_stores_and_atomics=false
@@ -16,32 +24,33 @@
 --gpu_allow_invalid_fetch_constants=true
 --gpu_plugin=xenos
 
-# Gamma & Depth Configuration (Fixes dark tones without killing Early-Z)
+# Graphics Quality (Proper Exposure, Lighting & 2x MSAA)
 --gamma_render_target_as_unorm16=true
+--native_2x_msaa=true
 --depth_float24_round=false
 --depth_float24_convert_in_pixel_shader=false
 
-# High Performance & FPS Optimization
+# Fast Luminance Readbacks (Fixes dark scene without stalling GPU)
 --readback_resolve=fast
 --vulkan_readback_resolve=true
---readback_memexport=true
---readback_memexport_fast=true
---native_2x_msaa=false
---vulkan_pipeline_creation_threads=3
+--readback_memexport=false
+--vulkan_readback_memexport=false
+
+# High-Throughput Vulkan Pipeline
+--vulkan_pipeline_creation_threads=4
 --async_shader_compilation=true
 --vulkan_async_skip_incomplete_frames=false
 --vulkan_submit_on_primary_buffer_end=true
---vulkan_dynamic_rendering=true
---gpu_idle_spins=100
---gtav_fps_limit=0
---gtav_audio_unsync=true
+--vulkan_dynamic_rendering=false
+--gpu_idle_spins=0
+--gtav_android_main_prime=true
 
 # Touch Controls
 --gtav_touch_controls=true
 --gtav_touch_scale=1.1
 --gtav_touch_inset=0.0
 
-# Audio Buffers (prevents stuttering)
+# Low-Latency Audio
 --audio_maxqframes=32
 --audio_device_frames=512
 --audio_force_stereo=true
