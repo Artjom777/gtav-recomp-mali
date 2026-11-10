@@ -3300,12 +3300,12 @@ struct Backend::Impl {
     list->setGraphicsPushConstants(0, push, 0, sizeof(push));
     RenderViewport vp(0.0f, 0.0f, float(Sz(t->width, t->scale)), float(Sz(t->height, t->scale)));
     RenderViewport vps[4] = {vp, vp, vp, vp};
-    list->setViewports(vps, std::max(n, 1u));
+    list->setViewports(vps, is_mali ? 1u : std::max(n, 1u));
     const RenderRect whole{0, 0, int32_t(Sz(t->width, t->scale)), int32_t(Sz(t->height, t->scale))};
     for (uint32_t r = 0; r < (rects ? count : 1u); r++) {
       const RenderRect& rc = rects ? rects[r] : whole;
       RenderRect scs[4] = {rc, rc, rc, rc};
-      list->setScissors(scs, std::max(n, 1u));
+      list->setScissors(scs, is_mali ? 1u : std::max(n, 1u));
       list->drawInstanced(3, 1, 0, 0);
     }
     // The next draw sets its pipeline, viewports, scissor and depth bias again; descriptor sets and
@@ -4697,8 +4697,9 @@ struct Backend::Impl {
     }
 #endif
     // Pipelines with several render targets declare one viewport per target.
+    // Mali Vulkan driver corrupts its stack canary if viewportCount > 1; single viewport 0 is standard.
     uint32_t w = count ? color[0]->width : depth->width, h = count ? color[0]->height : depth->height;
-    uint32_t nvp = std::max(bind_count, 1u);
+    uint32_t nvp = is_mali ? 1u : std::max(bind_count, 1u);
     RenderRect scissor(0, 0, int32_t(w), int32_t(h));
     if (REXCVAR_GET(gtav_native_scissor)) scissor = GuestScissor(r, w, h);
     if (const float ts = count ? color[0]->scale : depth->scale; ts != 1.0f) {
@@ -5460,8 +5461,8 @@ struct Backend::Impl {
     RenderRect sc{int32_t(x1), int32_t(y1), int32_t(x2), int32_t(y2)};
     RenderViewport vps[4] = {vp, vp, vp, vp};
     RenderRect scs[4] = {sc, sc, sc, sc};
-    list->setViewports(vps, std::max(n, 1u));
-    list->setScissors(scs, std::max(n, 1u));
+    list->setViewports(vps, is_mali ? 1u : std::max(n, 1u));
+    list->setScissors(scs, is_mali ? 1u : std::max(n, 1u));
     const uint32_t passes_before = plume::g_statRenderPasses;
     list->drawInstanced(3, 1, 0, 0);
     fetch_restarted = plume::g_statRenderPasses != passes_before;

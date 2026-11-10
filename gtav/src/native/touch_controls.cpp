@@ -262,19 +262,7 @@ std::unique_ptr<rex::input::InputDriver> CreateDriver() { return std::make_uniqu
 
 bool Visible() {
   if (!REXCVAR_GET(gtav_touch_controls)) return false;
-#if !defined(__ANDROID__)
-  // Re-checked twice a second: a pad connected over Bluetooth hides the overlay.
-  static std::atomic<uint64_t> next_check{0};
-  static std::atomic<bool> pad{false};
-  uint64_t now = SDL_GetTicks();
-  if (now >= next_check.load()) {
-    next_check = now + 500;
-    pad = RealPadConnected();
-  }
-  return !pad.load();
-#else
   return true;
-#endif
 }
 
 void Draw(ImDrawList* list, float w, float h) {
