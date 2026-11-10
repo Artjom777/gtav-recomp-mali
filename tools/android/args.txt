@@ -1,16 +1,17 @@
-# POCO X7 Pro (MediaTek Dimensity 8400-Ultra / Mali-G720 MC7) High-FPS Smooth Config
+# POCO X7 Pro (MediaTek Dimensity 8400-Ultra / Mali-G720 MC7) High-FPS Native Config
 --headless=false
 --log_level=info
---gtav_native=off
---gpu_skip_rendering=false
---gpu_skip_rendering_lag_ms=0
---window_presenter=true
+--gtav_native=on
+--gpu_skip_rendering=true
+--gpu_skip_rendering_lag_ms=4
+--window_presenter=false
 
 # High FPS & No Stutter / Smooth Frame Pacing
 --clock_no_scaling=false
 --gtav_fps_limit=60
---gtav_audio_unsync=true
+--gtav_native_vsync=false
 --vsync=false
+--gtav_native_fps=true
 --gtav_native_stats=true
 
 # Presentation Modes (Mailbox triple buffering on 120Hz display prevents judder)
@@ -18,7 +19,7 @@
 --vulkan_allow_present_mode_mailbox=true
 --vulkan_allow_present_mode_fifo_relaxed=true
 
-# Mali-G720 Compatibility & Crash Prevention
+# Mali-G720 Compatibility & Stability
 --occlusion_query_enable=false
 --query_occlusion_fake_sample_count=1000
 --vulkan_require_vertex_pipeline_stores_and_atomics=false
@@ -26,27 +27,18 @@
 --vulkan_require_fill_mode_non_solid=false
 --vulkan_sparse_shared_memory=false
 --gpu_allow_invalid_fetch_constants=true
---gpu_plugin=xenos
 
-# Visual Quality & Color Precision (Native 2x MSAA for Xbox 360 EDRAM layout)
---gamma_render_target_as_unorm16=true
---native_2x_msaa=true
---depth_float24_round=false
---depth_float24_convert_in_pixel_shader=false
-
-# GPU-Local Resolves (Eliminates CPU memcpy and ZRAM swapping stalls)
---readback_resolve=none
---vulkan_readback_resolve=false
---readback_memexport=false
---vulkan_readback_memexport=false
-
-# High-Throughput Pipeline (End-of-frame submission for TBDR Mali GPU)
---vulkan_pipeline_creation_threads=3
---async_shader_compilation=true
---vulkan_async_skip_incomplete_frames=true
---vulkan_submit_on_primary_buffer_end=false
---vulkan_dynamic_rendering=false
---gpu_idle_spins=64
+# Native Renderer Architecture (Direct TBDR Vulkan Pipeline)
+--gtav_native_rect_gs=false
+--gtav_native_fetch_resolves=false
+--gtav_native_point_float32=true
+--gtav_native_draw_clears=true
+--gtav_native_hold_lost_frames=false
+--gtav_native_async_pipelines=false
+--gtav_native_pipeline_wait_ms=60.0
+--gtav_native_render_scale=0.50
+--gtav_native_decode_bc=true
+--gtav_native_texture_budget_mb=768
 --gtav_android_main_prime=true
 
 # Touch Controls (Always enabled on mobile)
@@ -58,3 +50,7 @@
 --audio_maxqframes=32
 --audio_device_frames=512
 --audio_force_stereo=true
+
+# Shaders
+--gtav_native_save_missing_shaders=true
+--gtav_native_compile=false

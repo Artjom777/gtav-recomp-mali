@@ -877,7 +877,11 @@ bool IsFixed16(RenderFormat f) {
 }
 
 RenderSampleCounts SampleCount(uint32_t msaa) {
+#if GTAV_MOBILE
+  return RenderSampleCount::COUNT_1;
+#else
   return msaa == 2 ? RenderSampleCount::COUNT_4 : msaa == 1 ? RenderSampleCount::COUNT_2 : RenderSampleCount::COUNT_1;
+#endif
 }
 
 // Bring-up display of one decoded texel (mip 0) as RGB8, clamped like the native dump's blit.
@@ -2817,6 +2821,7 @@ struct Backend::Impl {
   }
 
   RenderTarget* Target(uint32_t base, uint32_t format, bool depth, uint32_t pitch, uint32_t msaa, uint32_t height) {
+    if (is_mali) msaa = 0;
     if (!depth) format = StorageFormat(format);
     // Depth: D24S8 and D24FS8 at one EDRAM base are the same memory (and one host format here), so
     // they share a target; keyed apart, a pass naming the other format tested an empty depth buffer.
@@ -3355,6 +3360,7 @@ struct Backend::Impl {
   uint32_t ActiveTargets(const uint8_t* r, uint32_t height, RenderTarget* color[4], RenderTarget** depth,
                          bool want_depth) {
     auto surface = regs::Surface(r);
+    if (is_mali) surface.msaa = 0;
     uint32_t mode = regs::Read(r, regs::RB_MODECONTROL) & 7;
     uint32_t mask = regs::Read(r, regs::RB_COLOR_MASK);
     uint32_t count = 0;
@@ -4924,6 +4930,7 @@ struct Backend::Impl {
     // phone pass clears 2D0 while it reads 7e3 and then draws 8888, which kept the stale 8888
     // contents (a box around the phone). A clear wipes the memory, so clear every alias of it.
     auto surface = regs::Surface(r);
+    if (is_mali) surface.msaa = 0;
     for (uint32_t i = 0; i < count; i++) {
       if (!(c.flags & (1u << i))) continue;
       uint32_t base = regs::Color(r, int(i)).base;
@@ -5592,6 +5599,7 @@ struct Backend::Impl {
     uint32_t dw = (words[2] & 0x1FFF) + 1, dh = ((words[2] >> 13) & 0x1FFF) + 1;
     uint32_t source = rc.flags & 7;
     auto surface = regs::Surface(r);
+    if (is_mali) surface.msaa = 0;
     RenderTarget* src = nullptr;
     bool depth_resolve = source >= 4;
     if (!depth_resolve) {
