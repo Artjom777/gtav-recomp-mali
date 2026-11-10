@@ -46,7 +46,7 @@
 --vulkan_async_skip_incomplete_frames=false
 --vulkan_submit_on_primary_buffer_end=true
 --vulkan_dynamic_rendering=false
---gpu_idle_spins=0
+--gpu_idle_spins=1000
 --gtav_android_main_prime=true
 
 # Touch Controls
