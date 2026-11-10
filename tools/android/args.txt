@@ -1,4 +1,4 @@
-# POCO X7 Pro (Mali-G720 MC7 / MediaTek Dimensity 8400) High-Performance 30 FPS Config
+# POCO X7 Pro (MediaTek Dimensity 8400 / Mali-G720 MC7) High Performance No-Stutter Config
 --headless=false
 --log_level=info
 --gtav_native=off
@@ -6,13 +6,17 @@
 --gpu_skip_rendering_lag_ms=0
 --window_presenter=true
 
-# Smooth Frame Pacing & VSync
---vsync=true
---gtav_fps_limit=30
---gtav_audio_unsync=false
---vulkan_allow_present_mode_immediate=false
---vulkan_allow_present_mode_mailbox=false
---vulkan_allow_present_mode_fifo_relaxed=false
+# High FPS & No Stutter / Smooth Frame Pacing
+--clock_no_scaling=true
+--gtav_fps_limit=60
+--gtav_audio_unsync=true
+--vsync=false
+--gtav_native_stats=true
+
+# Presentation Modes (Mailbox triple buffering on 120Hz display prevents judder)
+--vulkan_allow_present_mode_immediate=true
+--vulkan_allow_present_mode_mailbox=true
+--vulkan_allow_present_mode_fifo_relaxed=true
 
 # Mali-G720 Compatibility & Crash Prevention
 --occlusion_query_enable=false
@@ -24,20 +28,20 @@
 --gpu_allow_invalid_fetch_constants=true
 --gpu_plugin=xenos
 
-# Graphics Quality (Proper Exposure, Lighting & 2x MSAA)
+# Visual Quality & Color Precision (Disable MSAA to save massive fillrate bandwidth on tile GPU)
 --gamma_render_target_as_unorm16=true
---native_2x_msaa=true
+--native_2x_msaa=false
 --depth_float24_round=false
 --depth_float24_convert_in_pixel_shader=false
 
-# Fast Luminance Readbacks (Fixes dark scene without stalling GPU)
+# Fast Luminance Readbacks (Prevents dark scenes without blocking GPU)
 --readback_resolve=fast
 --vulkan_readback_resolve=true
 --readback_memexport=false
 --vulkan_readback_memexport=false
 
-# High-Throughput Vulkan Pipeline
---vulkan_pipeline_creation_threads=4
+# High-Throughput Pipeline & Multi-Core Pinning (3 threads for background compilation without core starvation)
+--vulkan_pipeline_creation_threads=3
 --async_shader_compilation=true
 --vulkan_async_skip_incomplete_frames=false
 --vulkan_submit_on_primary_buffer_end=true
