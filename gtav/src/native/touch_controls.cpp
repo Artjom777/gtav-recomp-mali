@@ -278,18 +278,21 @@ void Draw(ImDrawList* list, float w, float h) {
       else sticks[f.owner == kLeftStick ? 0 : 1] = {true, f.x0, f.y0, f.x, f.y};
     }
   }
-  const ImU32 fill = IM_COL32(255, 255, 255, 40), fill_on = IM_COL32(255, 255, 255, 110);
-  const ImU32 edge = IM_COL32(255, 255, 255, 120), text = IM_COL32(255, 255, 255, 200);
+  const ImU32 shadow = IM_COL32(0, 0, 0, 160);
+  const ImU32 fill = IM_COL32(30, 30, 30, 140), fill_on = IM_COL32(0, 160, 255, 220);
+  const ImU32 edge = IM_COL32(255, 255, 255, 220), text = IM_COL32(255, 255, 255, 255);
   const bool menu_open = menu::IsOpen();
   for (int i = 0; i < kControlCount; i++) {
     if (menu_open && kControls[i].kind != kMenu) continue;
     ImVec2 c(CenterX(i, w, h), CenterY(i, h));
     float r = Radius(i, h);
+    list->AddCircleFilled(ImVec2(c.x + 2.0f, c.y + 2.0f), r, shadow, 32);
     list->AddCircleFilled(c, r, held[i] ? fill_on : fill, 32);
-    list->AddCircle(c, r, edge, 32, 2.0f);
+    list->AddCircle(c, r, edge, 32, 2.5f);
     const char* label = kControls[i].label;
-    float size = r * 0.8f;
+    float size = r * 0.85f;
     ImVec2 ts = ImGui::GetFont()->CalcTextSizeA(size, FLT_MAX, 0.0f, label);
+    list->AddText(ImGui::GetFont(), size, ImVec2(c.x - ts.x * 0.5f + 1.0f, c.y - ts.y * 0.5f + 1.0f), shadow, label);
     list->AddText(ImGui::GetFont(), size, ImVec2(c.x - ts.x * 0.5f, c.y - ts.y * 0.5f), text, label);
   }
   for (auto& s : sticks) {

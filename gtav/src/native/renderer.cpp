@@ -1259,8 +1259,10 @@ class Renderer {
       backend_.DrawCounter(list_, fps_value_, 8, 8, std::max(1u, h / 720), swapFormat);
     if (backend_ok_) {
       double frame_ms = fps_value_ ? 1000.0 / fps_value_ : 0.0;
-      if (ImDrawData* menu_data = menu::Frame(w, h, fps_value_, frame_ms))
+      if (ImDrawData* menu_data = menu::Frame(w, h, fps_value_, frame_ms)) {
+        list_->setFramebuffer(framebuffers_[image].get());
         backend_.DrawMenu(list_, menu_data, swapFormat);
+      }
     }
     list_->barriers(plume::RenderBarrierStage::NONE,
                     plume::RenderTextureBarrier(target, plume::RenderTextureLayout::PRESENT));

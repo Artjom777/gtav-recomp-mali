@@ -2247,10 +2247,10 @@ struct Backend::Impl {
     bound_fb = nullptr;
     for (auto*& c : bound_color) c = nullptr;
     bound_depth = nullptr;
-    list->setViewports(RenderViewport(0, 0, float(w), float(h)));
-    list->setScissors(RenderRect(0, 0, int32_t(w), int32_t(h)));
     list->setGraphicsPipelineLayout(layout.get());
     list->setPipeline(ResolvePipeline(t->format));
+    list->setViewports(RenderViewport(0, 0, float(w), float(h)));
+    list->setScissors(RenderRect(0, 0, int32_t(w), int32_t(h)));
     list->setGraphicsDescriptorSet(texture_set.get(), 0);
     list->setGraphicsDescriptorSet(texture_set.get(), 1);
     list->setGraphicsDescriptorSet(texture_set.get(), 2);
@@ -5001,10 +5001,10 @@ struct Backend::Impl {
     bound_fb = nullptr;
     const int32_t sx1 = Sc(int32_t(x1), s), sy1 = Sc(int32_t(y1), s), sx2 = Sc(int32_t(x2), s),
                   sy2 = Sc(int32_t(y2), s), spx = Sc(int32_t(px), s), spy = Sc(int32_t(py), s);
-    list->setViewports(RenderViewport(float(spx), float(spy), float(sx2 - sx1), float(sy2 - sy1)));
-    list->setScissors(RenderRect(spx, spy, spx + sx2 - sx1, spy + sy2 - sy1));
     list->setGraphicsPipelineLayout(layout.get());
     list->setPipeline(depth_pack_pipeline.get());
+    list->setViewports(RenderViewport(float(spx), float(spy), float(sx2 - sx1), float(sy2 - sy1)));
+    list->setScissors(RenderRect(spx, spy, spx + sx2 - sx1, spy + sy2 - sy1));
     list->setGraphicsDescriptorSet(texture_set.get(), 0);
     list->setGraphicsDescriptorSet(texture_set.get(), 1);
     list->setGraphicsDescriptorSet(texture_set.get(), 2);
@@ -5766,8 +5766,6 @@ struct Backend::Impl {
       // Host texels: source and destination share the scale, so the copy stays 1:1.
       const int32_t sx1 = Sc(int32_t(x1), s), sy1 = Sc(int32_t(y1), s), sx2 = Sc(int32_t(x2), s),
                     sy2 = Sc(int32_t(y2), s), spx = Sc(int32_t(px), s), spy = Sc(int32_t(py), s);
-      list->setViewports(RenderViewport(float(spx), float(spy), float(sx2 - sx1), float(sy2 - sy1)));
-      list->setScissors(RenderRect(spx, spy, spx + sx2 - sx1, spy + sy2 - sy1));
       list->setGraphicsPipelineLayout(layout.get());
       auto resolvePipe = depth_resolve ? depth_copy_pipeline.get() : ResolvePipeline(dst_format);
       if (!resolvePipe) {
@@ -5775,6 +5773,8 @@ struct Backend::Impl {
         return;
       }
       list->setPipeline(resolvePipe);
+      list->setViewports(RenderViewport(float(spx), float(spy), float(sx2 - sx1), float(sy2 - sy1)));
+      list->setScissors(RenderRect(spx, spy, spx + sx2 - sx1, spy + sy2 - sy1));
       list->setGraphicsDescriptorSet(texture_set.get(), 0);
       list->setGraphicsDescriptorSet(texture_set.get(), 1);
       list->setGraphicsDescriptorSet(texture_set.get(), 2);

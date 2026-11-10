@@ -3,12 +3,14 @@
 --log_level=info
 --gtav_native=on
 --gpu_skip_rendering=true
---gpu_skip_rendering_lag_ms=4
+--gpu_skip_rendering_lag_ms=0
+--gpu_idle_spins=1000
 --window_presenter=false
 
 # High FPS & No Stutter / Smooth Frame Pacing
---clock_no_scaling=false
+--clock_no_scaling=true
 --gtav_fps_limit=60
+--gtav_audio_unsync=true
 --gtav_native_vsync=false
 --vsync=false
 --gtav_native_fps=true
@@ -36,7 +38,7 @@
 --gtav_native_hold_lost_frames=false
 --gtav_native_async_pipelines=false
 --gtav_native_pipeline_wait_ms=60.0
---gtav_native_render_scale=0.50
+--gtav_native_render_scale=1.00
 --gtav_native_decode_bc=true
 --gtav_native_texture_budget_mb=768
 --gtav_android_main_prime=true
