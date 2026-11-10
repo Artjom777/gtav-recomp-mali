@@ -1,4 +1,4 @@
-# POCO X7 Pro (MediaTek Dimensity 8400 / Mali-G720 MC7) High Performance No-Stutter Config
+# POCO X7 Pro (MediaTek Dimensity 8400-Ultra / Mali-G720 MC7) High-FPS Smooth Config
 --headless=false
 --log_level=info
 --gtav_native=off
@@ -7,7 +7,7 @@
 --window_presenter=true
 
 # High FPS & No Stutter / Smooth Frame Pacing
---clock_no_scaling=true
+--clock_no_scaling=false
 --gtav_fps_limit=60
 --gtav_audio_unsync=true
 --vsync=false
@@ -28,28 +28,28 @@
 --gpu_allow_invalid_fetch_constants=true
 --gpu_plugin=xenos
 
-# Visual Quality & Color Precision (Disable MSAA to save massive fillrate bandwidth on tile GPU)
+# Visual Quality & Color Precision (Native 2x MSAA for Xbox 360 EDRAM layout)
 --gamma_render_target_as_unorm16=true
---native_2x_msaa=false
+--native_2x_msaa=true
 --depth_float24_round=false
 --depth_float24_convert_in_pixel_shader=false
 
-# Fast Luminance Readbacks (Prevents dark scenes without blocking GPU)
---readback_resolve=fast
---vulkan_readback_resolve=true
+# GPU-Local Resolves (Eliminates CPU memcpy and ZRAM swapping stalls)
+--readback_resolve=none
+--vulkan_readback_resolve=false
 --readback_memexport=false
 --vulkan_readback_memexport=false
 
-# High-Throughput Pipeline & Multi-Core Pinning (3 threads for background compilation without core starvation)
+# High-Throughput Pipeline (End-of-frame submission for TBDR Mali GPU)
 --vulkan_pipeline_creation_threads=3
 --async_shader_compilation=true
---vulkan_async_skip_incomplete_frames=false
---vulkan_submit_on_primary_buffer_end=true
+--vulkan_async_skip_incomplete_frames=true
+--vulkan_submit_on_primary_buffer_end=false
 --vulkan_dynamic_rendering=false
---gpu_idle_spins=1000
+--gpu_idle_spins=64
 --gtav_android_main_prime=true
 
-# Touch Controls
+# Touch Controls (Always enabled on mobile)
 --gtav_touch_controls=true
 --gtav_touch_scale=1.1
 --gtav_touch_inset=0.0

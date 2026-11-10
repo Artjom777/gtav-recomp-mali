@@ -75,9 +75,8 @@ class TouchOverlayDialog : public rex::ui::ImGuiDialog {
       __android_log_print(ANDROID_LOG_INFO, "gtav", "[TouchOverlay] Resolved: draw=%p, visible=%p", g_touch_draw, g_touch_visible);
     }
     if (g_touch_draw) {
-      if (!g_touch_visible || g_touch_visible()) {
-        g_touch_draw(ImGui::GetForegroundDrawList(), io.DisplaySize.x, io.DisplaySize.y);
-      }
+      // On Android, unconditionally render the on-screen touch overlay buttons
+      g_touch_draw(ImGui::GetForegroundDrawList(), io.DisplaySize.x, io.DisplaySize.y);
     }
   }
 };
