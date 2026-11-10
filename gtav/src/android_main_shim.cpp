@@ -63,12 +63,21 @@ class TouchOverlayDialog : public rex::ui::ImGuiDialog {
   TouchOverlayDialog(rex::ui::ImGuiDrawer* drawer) : rex::ui::ImGuiDialog(drawer) {}
   void OnDraw(ImGuiIO& io) override {
     if (!g_touch_draw) {
-      g_touch_draw = reinterpret_cast<TouchDrawFn>(dlsym(RTLD_DEFAULT, "_ZN4gtav6native5touch4DrawEP10ImDrawListff"));
-      g_touch_visible = reinterpret_cast<TouchVisibleFn>(dlsym(RTLD_DEFAULT, "_ZN4gtav6native5touch7VisibleEv"));
+      void* fast_lib = dlopen("libgtav_fast.so", RTLD_NOW | RTLD_GLOBAL);
+      if (fast_lib) {
+        g_touch_draw = reinterpret_cast<TouchDrawFn>(dlsym(fast_lib, "_ZN4gtav6native5touch4DrawEP10ImDrawListff"));
+        g_touch_visible = reinterpret_cast<TouchVisibleFn>(dlsym(fast_lib, "_ZN4gtav6native5touch7VisibleEv"));
+      }
+      if (!g_touch_draw) {
+        g_touch_draw = reinterpret_cast<TouchDrawFn>(dlsym(RTLD_DEFAULT, "_ZN4gtav6native5touch4DrawEP10ImDrawListff"));
+        g_touch_visible = reinterpret_cast<TouchVisibleFn>(dlsym(RTLD_DEFAULT, "_ZN4gtav6native5touch7VisibleEv"));
+      }
       __android_log_print(ANDROID_LOG_INFO, "gtav", "[TouchOverlay] Resolved: draw=%p, visible=%p", g_touch_draw, g_touch_visible);
     }
     if (g_touch_draw) {
-      g_touch_draw(ImGui::GetForegroundDrawList(), io.DisplaySize.x, io.DisplaySize.y);
+      if (!g_touch_visible || g_touch_visible()) {
+        g_touch_draw(ImGui::GetForegroundDrawList(), io.DisplaySize.x, io.DisplaySize.y);
+      }
     }
   }
 };
