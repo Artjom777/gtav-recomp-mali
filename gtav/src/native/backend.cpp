@@ -78,13 +78,15 @@ REXCVAR_DEFINE_INT32(gtav_native_dump_rt_skip, 0, "GTAV",
 // checks; the game streaming new data into a texture showed as stale gray blocks for up to that
 // many frames while moving.
 #ifdef __ANDROID__  // (iOS keeps the Mac's 30: the phone is short of CPU time)
-REXCVAR_DEFINE_INT32(gtav_native_texture_recheck_frames, 4, "GTAV",
+REXCVAR_DEFINE_INT32(gtav_native_texture_recheck_frames, 60, "GTAV",
                      "Frames between full re-checks of a large texture (spot checks in between)");
 #else
 REXCVAR_DEFINE_INT32(gtav_native_texture_recheck_frames, 30, "GTAV",
                      "Frames between full re-checks of a large texture (spot checks in between)");
 #endif
-#if defined(__APPLE__) && TARGET_OS_IPHONE
+#if defined(__ANDROID__)
+#define GTAV_TEXTURE_SAMPLE_FRAMES_DEFAULT 60
+#elif defined(__APPLE__) && TARGET_OS_IPHONE
 #define GTAV_TEXTURE_SAMPLE_FRAMES_DEFAULT 1
 #else
 #define GTAV_TEXTURE_SAMPLE_FRAMES_DEFAULT 1
@@ -500,11 +502,11 @@ class StreamConverter {
     for (int i = 0; i < threads; i++)
       workers_.emplace_back([this] {
 #ifdef __ANDROID__
-        // Not the prime core (the game's main thread) nor the renderer's middle cluster.
+        // Use performance Big cores (Cortex-A725) for high-throughput vertex stream conversion.
         if (int n = int(sysconf(_SC_NPROCESSORS_CONF)); n >= 4) {
           cpu_set_t set;
           CPU_ZERO(&set);
-          for (int c = 0; c < n / 2; c++) CPU_SET(c, &set);
+          for (int c = n / 2; c < n; c++) CPU_SET(c, &set);
           sched_setaffinity(0, sizeof(set), &set);
         }
 #endif

@@ -25,13 +25,14 @@
 --gtav_native_hold_lost_frames=true
 --gtav_native_hold_max_frames=10
 --gtav_native_render_scale=1.0
---gtav_native_max_anisotropy=2
+--gtav_native_max_anisotropy=1
 --gtav_native_fence_wait=true
 --gtav_native_fence_copy=true
 --gtav_native_fence_lag=2
 --gtav_native_record_thread=false
 --gtav_native_convert_threads=0
---gtav_native_texture_recheck_frames=30
+--gtav_native_texture_recheck_frames=60
+--gtav_native_texture_sample_frames=60
 --gtav_native_exact_barriers=true
 --gtav_native_load_clears=false
 --gtav_native_defer_clears=true
