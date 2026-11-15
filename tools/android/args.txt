@@ -23,7 +23,7 @@
 --gtav_native_async_pipelines=true
 --gtav_native_pipeline_wait_ms=0.0
 --gtav_native_hold_lost_frames=false
---gtav_native_render_scale=0.75
+--gtav_native_render_scale=1.0
 --gtav_native_max_anisotropy=2
 --gtav_native_fence_wait=true
 --gtav_native_fence_copy=true

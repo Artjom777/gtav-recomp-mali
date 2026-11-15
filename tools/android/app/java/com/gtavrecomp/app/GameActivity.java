@@ -133,7 +133,7 @@ public class GameActivity extends SDLActivity {
         "--gtav_native_hold_lost_frames=false",
         "--gtav_native_async_pipelines=true",
         "--gtav_native_pipeline_wait_ms=0.0",
-        "--gtav_native_render_scale=0.75",
+        "--gtav_native_render_scale=1.0",
         "--gtav_native_record_thread=false",
         "--gtav_native_convert_threads=0",
         "--gtav_native_load_clears=false",
