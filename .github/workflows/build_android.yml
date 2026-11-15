@@ -65,6 +65,11 @@ jobs:
         with:
           packages: "platform-tools platforms;android-34 build-tools;34.0.0 ndk;27.1.12297006"
 
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/share/powershell "$AGENT_TOOLSDIRECTORY" 2>/dev/null || true
+          df -h
+
       - name: Install Host Dependencies
         run: |
           sudo apt-get update
