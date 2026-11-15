@@ -6,9 +6,9 @@
 --gpu_skip_rendering_lag_ms=4
 --window_presenter=false
 
-# Stable Native 60 FPS Lockless Rendering (No Frame Generation Required)
+# Stable 30-60+ FPS Uncapped Rendering (Frame Generation OFF)
 --clock_no_scaling=true
---gtav_fps_limit=60
+--gtav_fps_limit=0
 --gtav_audio_unsync=true
 --vsync=false
 --gtav_native_vsync=false
@@ -20,7 +20,11 @@
 --vulkan_allow_present_mode_fifo_relaxed=true
 
 # Native Plume Engine & TBDR Mali-G720 MC7 Optimizations
---gtav_native_render_scale=1.0
+--gtav_native_render_scale=0.85
+--gtav_native_max_anisotropy=2
+--gtav_native_fence_wait=false
+--gtav_native_fence_copy=true
+--gtav_native_fence_lag=2
 --gtav_native_record_thread=true
 --gtav_native_convert_threads=4
 --gtav_native_exact_barriers=true
