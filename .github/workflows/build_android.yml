@@ -273,8 +273,13 @@ jobs:
             echo "Codegen output directory: $GEN_DIR"
             ls -la "$GEN_DIR" | head -n 20
 
-            LLVM_BIN=$(dirname $(find "$ANDROID_NDK_HOME" -name "aarch64-linux-android*-clang" | head -n 1))
+            CLANG_BIN=$(find "$ANDROID_NDK_HOME" -name "clang++" -type f -executable 2>/dev/null | head -n 1)
+            if [ -z "$CLANG_BIN" ]; then
+              CLANG_BIN=$(find "$ANDROID_NDK_HOME" -name "clang" -type f -executable 2>/dev/null | head -n 1)
+            fi
+            LLVM_BIN=$(dirname "$CLANG_BIN")
             echo "Using LLVM_BIN: $LLVM_BIN"
+            ls -la "$LLVM_BIN"/clang* "$LLVM_BIN"/*lld* || true
 
             # 1. Build POCO game pack
             mkdir -p artifacts/pack-poco
@@ -320,11 +325,13 @@ jobs:
           fi
 
       - name: List Artifacts
+        if: always()
         run: |
           echo "=== Artifacts to be published ==="
-          ls -lh artifacts/
+          ls -lh artifacts/ || true
 
       - name: Upload Android Artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gtav-recomp-android-release
@@ -334,14 +341,14 @@ jobs:
             artifacts/*.tar.gz
 
       - name: Generate Release Tag
-        if: github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.create_release)
+        if: (success() || failure()) && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.create_release)
         id: vars
         run: |
           echo "tag=android-$(date +'%Y%m%d%H%M')-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           echo "date=$(date +'%Y-%m-%d %H:%M')" >> "$GITHUB_OUTPUT"
 
       - name: Publish GitHub Release
-        if: github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.create_release)
+        if: (success() || failure()) && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.create_release)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.vars.outputs.tag }}
