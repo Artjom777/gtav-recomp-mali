@@ -3299,21 +3299,13 @@ struct Backend::Impl {
     const float push[4] = {color.r, color.g, color.b, color.a};
     list->setGraphicsPushConstants(0, push, 0, sizeof(push));
     RenderViewport vp(0.0f, 0.0f, float(Sz(t->width, t->scale)), float(Sz(t->height, t->scale)));
+    RenderViewport vps[4] = {vp, vp, vp, vp};
+    list->setViewports(vps, is_mali ? 1u : std::max(n, 1u));
     const RenderRect whole{0, 0, int32_t(Sz(t->width, t->scale)), int32_t(Sz(t->height, t->scale))};
-    if (is_mali) {
-      list->setViewports(vp);
-    } else {
-      RenderViewport vps[4] = {vp, vp, vp, vp};
-      list->setViewports(vps, std::max(n, 1u));
-    }
     for (uint32_t r = 0; r < (rects ? count : 1u); r++) {
       const RenderRect& rc = rects ? rects[r] : whole;
-      if (is_mali) {
-        list->setScissors(rc);
-      } else {
-        RenderRect scs[4] = {rc, rc, rc, rc};
-        list->setScissors(scs, std::max(n, 1u));
-      }
+      RenderRect scs[4] = {rc, rc, rc, rc};
+      list->setScissors(scs, is_mali ? 1u : std::max(n, 1u));
       list->drawInstanced(3, 1, 0, 0);
     }
     // The next draw sets its pipeline, viewports, scissor and depth bias again; descriptor sets and
@@ -4716,15 +4708,10 @@ struct Backend::Impl {
     }
     if (ds.viewports != nvp || std::memcmp(&ds.vp, &vp, sizeof(vp)) != 0 ||
         std::memcmp(&ds.scissor, &scissor, sizeof(scissor)) != 0) {
-      if (is_mali) {
-        list->setViewports(vp);
-        list->setScissors(scissor);
-      } else {
-        RenderViewport vps[4] = {vp, vp, vp, vp};
-        RenderRect scissors[4] = {scissor, scissor, scissor, scissor};
-        list->setViewports(vps, nvp);
-        list->setScissors(scissors, nvp);
-      }
+      RenderViewport vps[4] = {vp, vp, vp, vp};
+      RenderRect scissors[4] = {scissor, scissor, scissor, scissor};
+      list->setViewports(vps, nvp);
+      list->setScissors(scissors, nvp);
       ds.viewports = nvp;
       ds.vp = vp;
       ds.scissor = scissor;
@@ -5475,17 +5462,12 @@ struct Backend::Impl {
     list->setGraphicsPushConstants(0, &push, 0, sizeof(push));
     int32_t sw = std::max(1, int32_t(x2) - int32_t(x1));
     int32_t sh = std::max(1, int32_t(y2) - int32_t(y1));
-    RenderViewport vp(float(x1), float(y1), float(sw), float(sh));
+    RenderViewport vp = RenderViewport(float(x1), float(y1), float(sw), float(sh));
     RenderRect sc{int32_t(x1), int32_t(y1), int32_t(x1) + sw, int32_t(y1) + sh};
-    if (is_mali) {
-      list->setViewports(vp);
-      list->setScissors(sc);
-    } else {
-      RenderViewport vps[4] = {vp, vp, vp, vp};
-      RenderRect scs[4] = {sc, sc, sc, sc};
-      list->setViewports(vps, std::max(n, 1u));
-      list->setScissors(scs, std::max(n, 1u));
-    }
+    RenderViewport vps[4] = {vp, vp, vp, vp};
+    RenderRect scs[4] = {sc, sc, sc, sc};
+    list->setViewports(vps, is_mali ? 1u : std::max(n, 1u));
+    list->setScissors(scs, is_mali ? 1u : std::max(n, 1u));
     const uint32_t passes_before = plume::g_statRenderPasses;
     list->drawInstanced(3, 1, 0, 0);
     fetch_restarted = plume::g_statRenderPasses != passes_before;
