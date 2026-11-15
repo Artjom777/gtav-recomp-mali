@@ -15,6 +15,9 @@
 #define FLT_MIN asfloat(0xff7fffff)
 #define FLT_MAX asfloat(0x7f7fffff)
 
+// Safe rsqrt for GPUs with fast-math enabled (e.g. Mali): prevent clamp(rsqrt(0)) * 0 -> NaN
+#define rsqrt(x) rsqrt(max(x, 1.17549435e-38f))
+
 #ifdef __spirv__
 
 struct PushConstants

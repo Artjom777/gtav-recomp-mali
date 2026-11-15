@@ -4316,10 +4316,10 @@ struct Backend::Impl {
       REXLOG_INFO("[native] alpha test function {} first seen (ref {}, ps {:016X})", sc[138], alpha_ref, d.ps_hash);
     }
     // g_AlphaToMask (533): without MSAA the shader applies the Xenos alpha-to-mask dither itself.
-    // On Mali GPUs, disable custom dither to prevent visual glitches and tile pipeline stalls.
+    // Essential on Mali GPUs for soft pedestrian hair/beard transparency and foliage billboard edges.
     {
       uint32_t colorcontrol = regs::Read(r, regs::RB_COLORCONTROL);
-      sc[133] = (!is_mali && count && ((colorcontrol >> 4) & 1) &&
+      sc[133] = (count && ((colorcontrol >> 4) & 1) &&
                         SampleCount(AttachmentMsaa(color, count, depth, r)) == RenderSampleCount::COUNT_1)
                     ? (colorcontrol >> 24) | 0x100u
                     : 0u;
