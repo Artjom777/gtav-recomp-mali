@@ -23,3 +23,4 @@ tools/scripttools/bk
 tools/scripttools/scan
 rexglue-sdk/
 .DS_Store
+tools_x64/
