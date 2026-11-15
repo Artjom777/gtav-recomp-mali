@@ -6,11 +6,14 @@
 # Output: build/android/spirv (push to files/spirv). Usage: tools/android/make_spirv.sh [JOBS]
 set -e
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
-TOOLS=$ROOT/build/gtav/tools
-CACHE=$ROOT/build/gtav/shader_cache
-OUT=$ROOT/build/android/spirv
-WORK=$ROOT/build/android/spirv_work
+TOOLS=${TOOLS:-$ROOT/build/gtav/tools}
+CACHE=${CACHE:-$ROOT/build/gtav/shader_cache}
+OUT=${OUT:-$ROOT/build/android/spirv}
+WORK=${WORK:-$ROOT/build/android/spirv_work}
 mkdir -p "$OUT" "$WORK"
+
+export LD_LIBRARY_PATH="$TOOLS/lib:$LD_LIBRARY_PATH"
+
 # Adreno also asserts on 2-component loads through a device address: split float2 loads in two.
 sed -e 's/(1ull << semanticIndex)/(1u << semanticIndex)/' \
     -e 's/vk::RawBufferLoad<float2>(\(g_PushConstants\.SharedConstants + \)\([0-9]*\))/float2(vk::RawBufferLoad<float>(\1\2), vk::RawBufferLoad<float>(\1\2 + 4))/' \
@@ -18,10 +21,12 @@ sed -e 's/(1ull << semanticIndex)/(1u << semanticIndex)/' \
 grep -q '1u << semanticIndex' "$WORK/shader_common.h"
 touch "$WORK/shader_common.h"  # regenerate everything when this script runs
 ! grep -q 'RawBufferLoad<float2>' "$WORK/shader_common.h"
+
 one() {
   bin=$1; name=$(basename "$bin" .bin); out=$OUT/$name.spv
   [ -s "$out" ] && [ "$out" -nt "$WORK/shader_common.h" ] && return 0
   hlsl=$WORK/$name.hlsl
+  export LD_LIBRARY_PATH="$TOOLS/lib:$LD_LIBRARY_PATH"
   "$TOOLS/XenosRecomp" "$bin" "$hlsl" "$WORK/shader_common.h" >/dev/null 2>&1 || { echo "xr fail $name"; return 0; }
   # Constants from uniform buffers (set 4) instead of device-address loads: ubo_constants.py.
   python3 -I "$UBO" "$hlsl" || { echo "ubo fail $name"; return 0; }

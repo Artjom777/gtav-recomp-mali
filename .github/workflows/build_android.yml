@@ -312,9 +312,32 @@ jobs:
             printf "gtav-recomp android pack 1\nshell %s\nshell %s\n" "$POCO_HASH" "$ARM64_HASH" > artifacts/pack-arm64/pack.txt
             cp tools/release/expected.txt artifacts/pack-arm64/expected.txt
 
-            # 5. Package zip files
-            (cd artifacts/pack-poco && zip -r ../gtav-android-pack-poco-x7-pro.zip libgtav_game.so pack.txt expected.txt)
-            (cd artifacts/pack-arm64 && zip -r ../gtav-android-pack-arm64-v8a.zip libgtav_game.so pack.txt expected.txt)
+            # 5. Shaders: translate shader_cache to SPIR-V (.spv) for Android
+            if [ -f "tools/shader_cache.tar.gz" ] && [ -d "tools/x86_64" ]; then
+              echo "=== Translating shaders to SPIR-V for Android ==="
+              mkdir -p build/gtav/tools build/gtav/shader_cache build/android/spirv
+              cp -r tools/x86_64/* build/gtav/tools/
+              chmod +x build/gtav/tools/XenosRecomp build/gtav/tools/dxc build/gtav/tools/dxc-linux
+              tar -xzf tools/shader_cache.tar.gz -C build/gtav/shader_cache/
+              TOOLS="$PWD/build/gtav/tools" CACHE="$PWD/build/gtav/shader_cache" OUT="$PWD/build/android/spirv" ./tools/android/make_spirv.sh $(nproc)
+              echo "Compiled SPIR-V count: $(ls build/android/spirv/*.spv | wc -l)"
+
+              # Copy spirv/ into both pack directories so SetupActivity can extract them directly
+              cp -r build/android/spirv artifacts/pack-poco/spirv
+              cp -r build/android/spirv artifacts/pack-arm64/spirv
+
+              # Also generate standalone spirv zip
+              (cd build/android && zip -r ../../artifacts/gtav-spirv-pack.zip spirv)
+            fi
+
+            # 6. Package zip files
+            if [ -d "artifacts/pack-poco/spirv" ]; then
+              (cd artifacts/pack-poco && zip -r ../gtav-android-pack-poco-x7-pro.zip libgtav_game.so pack.txt expected.txt spirv)
+              (cd artifacts/pack-arm64 && zip -r ../gtav-android-pack-arm64-v8a.zip libgtav_game.so pack.txt expected.txt spirv)
+            else
+              (cd artifacts/pack-poco && zip -r ../gtav-android-pack-poco-x7-pro.zip libgtav_game.so pack.txt expected.txt)
+              (cd artifacts/pack-arm64 && zip -r ../gtav-android-pack-arm64-v8a.zip libgtav_game.so pack.txt expected.txt)
+            fi
             cp artifacts/gtav-android-pack-poco-x7-pro.zip artifacts/gtav-android-pack.zip
 
             echo "=== Created game packs successfully! ==="

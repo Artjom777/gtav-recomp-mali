@@ -1,16 +1,18 @@
 # POCO X7 Pro (MediaTek Dimensity 8400-Ultra / Mali-G720 MC7) High-FPS No-Lag Native Config
---headless=false
+--headless=true
 --log_level=info
 --gtav_native=on
---gpu_skip_rendering=false
---gpu_skip_rendering_lag_ms=0
---window_presenter=true
+--gpu_skip_rendering=true
+--gpu_skip_rendering_lag_ms=4
+--window_presenter=false
 
 # Stable Native 60 FPS Lockless Rendering (No Frame Generation Required)
 --clock_no_scaling=true
 --gtav_fps_limit=60
 --gtav_audio_unsync=true
 --vsync=false
+--gtav_native_vsync=false
+--gtav_native_fps=true
 
 # Presentation Modes (Mailbox triple buffering on 120Hz display prevents judder)
 --vulkan_allow_present_mode_immediate=true
@@ -42,7 +44,7 @@
 --readback_memexport=false
 --vulkan_readback_memexport=false
 --anisotropic_override=0
---texture_cache_memory_limit_hard=512
+--texture_cache_memory_limit_hard=768
 --gtav_android_main_prime=true
 
 # Touch Controls (Always visible on mobile)
