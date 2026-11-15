@@ -964,7 +964,7 @@ class PipelineCompiler {
       started_ = true;
       // iPhone: a pipeline takes ~3 s (MoltenVK + Metal on an A15), most of it waiting on the
       // Metal compiler service: more compiles in flight drain the backlog after an install faster.
-#if defined(__APPLE__) && TARGET_OS_IPHONE
+#if (defined(__APPLE__) && TARGET_OS_IPHONE) || defined(__ANDROID__)
       constexpr int kWorkers = 6;
 #else
       constexpr int kWorkers = 3;
