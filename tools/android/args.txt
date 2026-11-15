@@ -21,8 +21,9 @@
 
 # Native Plume Engine & TBDR Mali-G720 MC7 Optimizations
 --gtav_native_async_pipelines=true
---gtav_native_pipeline_wait_ms=0.0
---gtav_native_hold_lost_frames=false
+--gtav_native_pipeline_wait_ms=40.0
+--gtav_native_hold_lost_frames=true
+--gtav_native_hold_max_frames=15
 --gtav_native_render_scale=1.0
 --gtav_native_max_anisotropy=2
 --gtav_native_fence_wait=true
@@ -35,6 +36,7 @@
 --gtav_native_defer_clears=true
 --gtav_native_scissor=true
 --gtav_native_resolve_discard=true
+--xma_flush_streams=true
 
 # Mali Compatibility Safety
 --occlusion_query_enable=false
