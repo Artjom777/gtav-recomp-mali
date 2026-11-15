@@ -30,7 +30,8 @@
 --gtav_native_fence_copy=true
 --gtav_native_fence_lag=2
 --gtav_native_record_thread=false
---gtav_native_convert_threads=4
+--gtav_native_convert_threads=0
+--gtav_native_texture_recheck_frames=30
 --gtav_native_exact_barriers=true
 --gtav_native_load_clears=false
 --gtav_native_defer_clears=true
