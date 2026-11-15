@@ -245,11 +245,15 @@ jobs:
               -DSDL_X11_XSCRNSAVER=OFF
             cmake --build rexglue-sdk/out/build/host --target rexglue -j$(nproc)
 
-            REXGLUE_BIN=$(find "$PWD/rexglue-sdk/out/build/host" -name rexglue -type f -executable 2>/dev/null | head -n 1)
-            if [ -z "$REXGLUE_BIN" ]; then
-              REXGLUE_BIN=$(find "$PWD/rexglue-sdk" -name rexglue -type f -executable 2>/dev/null | head -n 1)
+            REXGLUE_BIN="$PWD/rexglue-sdk/out/linux-amd64/rexglue"
+            if [ ! -x "$REXGLUE_BIN" ]; then
+              REXGLUE_BIN=$(find "$PWD/rexglue-sdk/out/build/host" -name rexglue -type f -executable 2>/dev/null | head -n 1)
+            fi
+            if [ -z "$REXGLUE_BIN" ] || [ ! -x "$REXGLUE_BIN" ]; then
+              REXGLUE_BIN=$(find "$PWD/rexglue-sdk" -name rexglue -type f -executable 2>/dev/null | grep -E "linux-amd64|host" | head -n 1)
             fi
             echo "Using rexglue binary at: $REXGLUE_BIN"
+            file "$REXGLUE_BIN" || true
             chmod +x "$REXGLUE_BIN"
             export LD_LIBRARY_PATH="$(dirname "$REXGLUE_BIN"):$PWD/rexglue-sdk/out/linux-amd64:$LD_LIBRARY_PATH"
             "$REXGLUE_BIN" --version || true
