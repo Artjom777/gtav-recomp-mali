@@ -20,15 +20,18 @@
 --vulkan_allow_present_mode_fifo_relaxed=true
 
 # Native Plume Engine & TBDR Mali-G720 MC7 Optimizations
---gtav_native_render_scale=0.85
+--gtav_native_async_pipelines=true
+--gtav_native_pipeline_wait_ms=0.0
+--gtav_native_hold_lost_frames=false
+--gtav_native_render_scale=0.75
 --gtav_native_max_anisotropy=2
---gtav_native_fence_wait=false
+--gtav_native_fence_wait=true
 --gtav_native_fence_copy=true
 --gtav_native_fence_lag=2
---gtav_native_record_thread=true
---gtav_native_convert_threads=4
+--gtav_native_record_thread=false
+--gtav_native_convert_threads=0
 --gtav_native_exact_barriers=true
---gtav_native_load_clears=true
+--gtav_native_load_clears=false
 --gtav_native_defer_clears=true
 --gtav_native_scissor=true
 --gtav_native_resolve_discard=true
