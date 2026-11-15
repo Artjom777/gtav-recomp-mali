@@ -273,11 +273,10 @@ jobs:
             echo "Codegen output directory: $GEN_DIR"
             ls -la "$GEN_DIR" | head -n 20
 
-            CLANG_BIN=$(find "$ANDROID_NDK_HOME" -name "clang++" -type f -executable 2>/dev/null | head -n 1)
-            if [ -z "$CLANG_BIN" ]; then
-              CLANG_BIN=$(find "$ANDROID_NDK_HOME" -name "clang" -type f -executable 2>/dev/null | head -n 1)
+            LLVM_BIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+            if [ ! -d "$LLVM_BIN" ]; then
+              LLVM_BIN=$(find "$ANDROID_NDK_HOME" -name "bin" -type d | grep "llvm" | head -n 1)
             fi
-            LLVM_BIN=$(dirname "$CLANG_BIN")
             echo "Using LLVM_BIN: $LLVM_BIN"
             ls -la "$LLVM_BIN"/clang* "$LLVM_BIN"/*lld* || true
 
