@@ -233,7 +233,7 @@ index ad63e0e..d12e59f 100644
          RenderFramebufferDesc() = default;
  
 diff --git a/plume_vulkan.cpp b/plume_vulkan.cpp
-index 4fdc4bf..3514bbc 100644
+index 4fdc4bf..e3064c9 100644
 --- a/plume_vulkan.cpp
 +++ b/plume_vulkan.cpp
 @@ -11,7 +11,16 @@
@@ -400,6 +400,17 @@ index 4fdc4bf..3514bbc 100644
          if (res != VK_SUCCESS) {
              fprintf(stderr, "vkCreateComputePipelines failed with error code 0x%X.\n", res);
              return;
+@@ -1504,8 +1570,8 @@ namespace plume {
+ 
+         VkPipelineViewportStateCreateInfo viewportState = {};
+         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+-        viewportState.viewportCount = renderTargetCount;
+-        viewportState.scissorCount = renderTargetCount;
++        viewportState.viewportCount = 1;
++        viewportState.scissorCount = 1;
+ 
+         VkPipelineRasterizationStateCreateInfo rasterization = {};
+         rasterization.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 @@ -1617,6 +1683,10 @@ namespace plume {
              dynamicStates.emplace_back(VK_DYNAMIC_STATE_DEPTH_BIAS);
          }
@@ -1012,7 +1023,58 @@ index 4fdc4bf..3514bbc 100644
      void VulkanCommandList::setGraphicsRootDescriptor(RenderBufferReference bufferReference, uint32_t rootDescriptorIndex) {
          assert(false && "Root descriptors are not supported in Vulkan.");
      }
-@@ -3104,6 +3439,7 @@ namespace plume {
+@@ -3063,47 +3398,28 @@ namespace plume {
+     }
+ 
+     void VulkanCommandList::setViewports(const RenderViewport *viewports, uint32_t count) {
+-        if (count > 1) {
+-            thread_local std::vector<VkViewport> viewportVector;
+-            viewportVector.clear();
+-
+-            for (uint32_t i = 0; i < count; i++) {
+-                viewportVector.emplace_back(VkViewport{ viewports[i].x, viewports[i].y, viewports[i].width, viewports[i].height, viewports[i].minDepth, viewports[i].maxDepth });
+-            }
+-
+-            if (!viewportVector.empty()) {
+-                vkCmdSetViewport(vk, 0, uint32_t(viewportVector.size()), viewportVector.data());
+-            }
+-        }
+-        else {
+-            // Single element fast path.
+-            VkViewport viewport = VkViewport{ viewports[0].x, viewports[0].y, viewports[0].width, viewports[0].height, viewports[0].minDepth, viewports[0].maxDepth };
++        if (count > 0 && viewports != nullptr) {
++            float w = viewports[0].width > 1.0f ? viewports[0].width : 1.0f;
++            float h = viewports[0].height > 1.0f ? viewports[0].height : 1.0f;
++            VkViewport viewport = VkViewport{ viewports[0].x, viewports[0].y, w, h, viewports[0].minDepth, viewports[0].maxDepth };
+             vkCmdSetViewport(vk, 0, 1, &viewport);
+         }
+     }
+ 
+     void VulkanCommandList::setScissors(const RenderRect *scissorRects, uint32_t count) {
+-        if (count > 1) {
+-            thread_local std::vector<VkRect2D> scissorVector;
+-            scissorVector.clear();
+-
+-            for (uint32_t i = 0; i < count; i++) {
+-                scissorVector.emplace_back(VkRect2D{ VkOffset2D{ scissorRects[i].left, scissorRects[i].top }, VkExtent2D{ uint32_t(scissorRects[i].right - scissorRects[i].left), uint32_t(scissorRects[i].bottom - scissorRects[i].top) } });
+-            }
+-
+-            if (!scissorVector.empty()) {
+-                vkCmdSetScissor(vk, 0, uint32_t(scissorVector.size()), scissorVector.data());
+-            }
+-        }
+-        else {
+-            // Single element fast path.
+-            VkRect2D scissor = VkRect2D{ VkOffset2D{ scissorRects[0].left, scissorRects[0].top }, VkExtent2D{ uint32_t(scissorRects[0].right - scissorRects[0].left), uint32_t(scissorRects[0].bottom - scissorRects[0].top) } };
++        if (count > 0 && scissorRects != nullptr) {
++            int32_t l = scissorRects[0].left >= 0 ? scissorRects[0].left : 0;
++            int32_t t = scissorRects[0].top >= 0 ? scissorRects[0].top : 0;
++            int32_t r = scissorRects[0].right > l ? scissorRects[0].right : l + 1;
++            int32_t b = scissorRects[0].bottom > t ? scissorRects[0].bottom : t + 1;
++            VkRect2D scissor = VkRect2D{ VkOffset2D{ l, t }, VkExtent2D{ uint32_t(r - l), uint32_t(b - t) } };
+             vkCmdSetScissor(vk, 0, 1, &scissor);
+         }
+     }
  
      void VulkanCommandList::setFramebuffer(const RenderFramebuffer *framebuffer) {
          endActiveRenderPass();
@@ -1020,7 +1082,7 @@ index 4fdc4bf..3514bbc 100644
  
          if (framebuffer != nullptr) {
              const VulkanFramebuffer *interfaceFramebuffer = static_cast<const VulkanFramebuffer *>(framebuffer);
-@@ -3150,6 +3486,16 @@ namespace plume {
+@@ -3150,6 +3466,16 @@ namespace plume {
          assert(attachmentIndex < targetFramebuffer->colorAttachments.size());
          assert((clearRectsCount == 0) || (clearRects != nullptr));
  
@@ -1037,7 +1099,7 @@ index 4fdc4bf..3514bbc 100644
          checkActiveRenderPass();
  
          thread_local std::vector<VkClearRect> rectVector;
-@@ -3170,6 +3516,19 @@ namespace plume {
+@@ -3170,6 +3496,19 @@ namespace plume {
          assert(targetFramebuffer != nullptr);
          assert((clearRectsCount == 0) || (clearRects != nullptr));
  
@@ -1057,7 +1119,7 @@ index 4fdc4bf..3514bbc 100644
          checkActiveRenderPass();
  
          thread_local std::vector<VkClearRect> rectVector;
-@@ -3486,6 +3845,8 @@ namespace plume {
+@@ -3486,6 +3825,8 @@ namespace plume {
      void VulkanCommandList::resetQueryPool(const RenderQueryPool *queryPool, uint32_t queryFirstIndex, uint32_t queryCount) {
          assert(queryPool != nullptr);
  
@@ -1066,7 +1128,7 @@ index 4fdc4bf..3514bbc 100644
          const VulkanQueryPool *interfaceQueryPool = static_cast<const VulkanQueryPool *>(queryPool);
          vkCmdResetQueryPool(vk, interfaceQueryPool->vk, queryFirstIndex, queryCount);
      }
-@@ -3497,6 +3858,22 @@ namespace plume {
+@@ -3497,6 +3838,22 @@ namespace plume {
          vkCmdWriteTimestamp(vk, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, interfaceQueryPool->vk, queryIndex);
      }
  
@@ -1089,7 +1151,7 @@ index 4fdc4bf..3514bbc 100644
      void VulkanCommandList::checkActiveRenderPass() {
          assert(targetFramebuffer != nullptr);
          
-@@ -3507,12 +3884,70 @@ namespace plume {
+@@ -3507,12 +3864,70 @@ namespace plume {
              beginInfo.framebuffer = targetFramebuffer->vk;
              beginInfo.renderArea.extent.width = targetFramebuffer->width;
              beginInfo.renderArea.extent.height = targetFramebuffer->height;
@@ -1121,7 +1183,7 @@ index 4fdc4bf..3514bbc 100644
 +        const uint32_t rate = (width << 4) | height;
 +        if (!queue->device->fragmentShadingRateSupported || rate == shadingRate) {
 +            return;
-         }
++        }
 +        shadingRate = rate;
 +        const VkExtent2D size = { width, height };
 +        const VkFragmentShadingRateCombinerOpKHR ops[2] = { VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR, VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR };
@@ -1148,7 +1210,7 @@ index 4fdc4bf..3514bbc 100644
 +            }
 +            g_statClearsPartial++;
 +            return false;
-+        }
+         }
 +        return true;
      }
  
@@ -1161,7 +1223,7 @@ index 4fdc4bf..3514bbc 100644
          if (activeRenderPass != VK_NULL_HANDLE) {
              vkCmdEndRenderPass(vk);
              activeRenderPass = VK_NULL_HANDLE;
-@@ -3520,11 +3955,10 @@ namespace plume {
+@@ -3520,11 +3935,10 @@ namespace plume {
      }
  
      void VulkanCommandList::setDescriptorSet(VkPipelineBindPoint bindPoint, const VulkanPipelineLayout *pipelineLayout, const RenderDescriptorSet *descriptorSet, uint32_t setIndex) {
@@ -1175,7 +1237,7 @@ index 4fdc4bf..3514bbc 100644
          vkCmdBindDescriptorSets(vk, bindPoint, pipelineLayout->vk, setIndex, 1, &interfaceSet->vk, 0, nullptr);
      }
  
-@@ -3632,11 +4066,12 @@ namespace plume {
+@@ -3632,11 +4046,12 @@ namespace plume {
          submitInfo.pCommandBuffers = commandBuffers.data();
          submitInfo.commandBufferCount = uint32_t(commandBuffers.size());
  
@@ -1190,7 +1252,7 @@ index 4fdc4bf..3514bbc 100644
          }
  
          if (!signalSemaphoreVector.empty()) {
-@@ -3666,7 +4101,22 @@ namespace plume {
+@@ -3666,7 +4081,22 @@ namespace plume {
          assert(fence != nullptr);
  
          VulkanCommandFence *interfaceFence = static_cast<VulkanCommandFence *>(fence);
@@ -1214,7 +1276,7 @@ index 4fdc4bf..3514bbc 100644
          if (res != VK_SUCCESS) {
              fprintf(stderr, "vkWaitForFences failed with error code 0x%X.\n", res);
              return;
-@@ -3914,6 +4364,27 @@ namespace plume {
+@@ -3914,6 +4344,27 @@ namespace plume {
              featuresChain = &portabilityFeatures;
          }
  
@@ -1242,7 +1304,7 @@ index 4fdc4bf..3514bbc 100644
          VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {};
          VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {};
          const bool rayTracingFound = (supportedOptionalExtensions.find(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME) != supportedOptionalExtensions.end()) && (supportedOptionalExtensions.find(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME) != supportedOptionalExtensions.end());
-@@ -3931,6 +4402,7 @@ namespace plume {
+@@ -3931,6 +4382,7 @@ namespace plume {
          deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
          deviceFeatures.pNext = featuresChain;
          vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
@@ -1250,7 +1312,7 @@ index 4fdc4bf..3514bbc 100644
  
          // Check for properties.
          if (rayTracingFound) {
-@@ -4001,6 +4473,15 @@ namespace plume {
+@@ -4001,6 +4453,15 @@ namespace plume {
              createDeviceChain = &portabilityFeatures;
          }
  
@@ -1266,7 +1328,7 @@ index 4fdc4bf..3514bbc 100644
          // Retrieve the information for the queue families.
          uint32_t queueFamilyCount = 0;
          vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
-@@ -4092,6 +4573,22 @@ namespace plume {
+@@ -4092,6 +4553,22 @@ namespace plume {
              }
          }
  
@@ -1289,7 +1351,7 @@ index 4fdc4bf..3514bbc 100644
          VmaVulkanFunctions vmaFunctions = {};
          vmaFunctions.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
          vmaFunctions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
-@@ -4120,6 +4617,10 @@ namespace plume {
+@@ -4120,6 +4597,10 @@ namespace plume {
          allocatorInfo.pVulkanFunctions = &vmaFunctions;
          allocatorInfo.instance = renderInterface->instance;
          allocatorInfo.vulkanApiVersion = renderInterface->appInfo.apiVersion;
@@ -1300,7 +1362,7 @@ index 4fdc4bf..3514bbc 100644
  
          res = vmaCreateAllocator(&allocatorInfo, &allocator);
          if (res != VK_SUCCESS) {
-@@ -4203,12 +4704,22 @@ namespace plume {
+@@ -4203,12 +4684,22 @@ namespace plume {
          return std::make_unique<VulkanSampler>(this, desc);
      }
  
@@ -1325,7 +1387,7 @@ index 4fdc4bf..3514bbc 100644
      }
  
      std::unique_ptr<RenderPipeline> VulkanDevice::createRaytracingPipeline(const RenderRaytracingPipelineDesc &desc, const RenderPipeline *previousPipeline) {
-@@ -4255,6 +4766,10 @@ namespace plume {
+@@ -4255,6 +4746,10 @@ namespace plume {
          return std::make_unique<VulkanQueryPool>(this, queryCount);
      }
  
@@ -1336,7 +1398,7 @@ index 4fdc4bf..3514bbc 100644
      void VulkanDevice::setBottomLevelASBuildInfo(RenderBottomLevelASBuildInfo &buildInfo, const RenderBottomLevelASMesh *meshes, uint32_t meshCount, bool preferFastBuild, bool preferFastTrace) {
          assert(meshes != nullptr);
          assert(meshCount > 0);
-@@ -4463,6 +4978,11 @@ namespace plume {
+@@ -4463,6 +4958,11 @@ namespace plume {
      void VulkanDevice::release() {
          nullBuffer = nullptr; // force destruction before destroying allocator
  
@@ -1348,7 +1410,7 @@ index 4fdc4bf..3514bbc 100644
          if (allocator != VK_NULL_HANDLE) {
              vmaDestroyAllocator(allocator);
              allocator = VK_NULL_HANDLE;
-@@ -4495,7 +5015,27 @@ namespace plume {
+@@ -4495,7 +4995,27 @@ namespace plume {
  #else
      VulkanInterface::VulkanInterface() {
  #endif
@@ -1376,7 +1438,7 @@ index 4fdc4bf..3514bbc 100644
          if (res != VK_SUCCESS) {
              fprintf(stderr, "volkInitialize failed with error code 0x%X.\n", res);
              return;
-@@ -4666,6 +5206,26 @@ namespace plume {
+@@ -4666,6 +5186,26 @@ namespace plume {
          return instance != nullptr;
      }
  

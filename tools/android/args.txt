@@ -1,12 +1,12 @@
-# POCO X7 Pro (MediaTek Dimensity 8400-Ultra / Mali-G720 MC7) High-FPS No-Lag Config
+# POCO X7 Pro (MediaTek Dimensity 8400-Ultra / Mali-G720 MC7) High-FPS No-Lag Native Config
 --headless=false
 --log_level=info
---gtav_native=off
+--gtav_native=on
 --gpu_skip_rendering=false
 --gpu_skip_rendering_lag_ms=0
 --window_presenter=true
 
-# Smooth Frame Pacing & Lockless Clock (Fixes futex lock contention)
+# Stable Native 60 FPS Lockless Rendering (No Frame Generation Required)
 --clock_no_scaling=true
 --gtav_fps_limit=60
 --gtav_audio_unsync=true
@@ -17,7 +17,17 @@
 --vulkan_allow_present_mode_mailbox=true
 --vulkan_allow_present_mode_fifo_relaxed=true
 
-# Mali-G720 Compatibility & Crash Prevention
+# Native Plume Engine & TBDR Mali-G720 MC7 Optimizations
+--gtav_native_render_scale=1.0
+--gtav_native_record_thread=true
+--gtav_native_convert_threads=4
+--gtav_native_exact_barriers=true
+--gtav_native_load_clears=true
+--gtav_native_defer_clears=true
+--gtav_native_scissor=true
+--gtav_native_resolve_discard=true
+
+# Mali Compatibility Safety
 --occlusion_query_enable=false
 --query_occlusion_fake_sample_count=1000
 --vulkan_require_vertex_pipeline_stores_and_atomics=false
@@ -25,27 +35,12 @@
 --vulkan_require_fill_mode_non_solid=false
 --vulkan_sparse_shared_memory=false
 --gpu_allow_invalid_fetch_constants=true
---gpu_plugin=xenos
 
-# Visual Quality & Color Precision
---gamma_render_target_as_unorm16=true
---native_2x_msaa=false
---depth_float24_round=false
---depth_float24_convert_in_pixel_shader=false
-
-# GPU-Local Resolves (Eliminates CPU memcpy and ZRAM swapping stalls)
+# Local GPU Resolves & High-Throughput Memory
 --readback_resolve=none
 --vulkan_readback_resolve=false
 --readback_memexport=false
 --vulkan_readback_memexport=false
-
-# High-Throughput Pipeline (TBDR Mali GPU optimizations & No Frame Dropping)
---vulkan_pipeline_creation_threads=3
---async_shader_compilation=true
---vulkan_async_skip_incomplete_frames=false
---vulkan_submit_on_primary_buffer_end=false
---vulkan_dynamic_rendering=false
---gpu_idle_spins=0
 --anisotropic_override=0
 --texture_cache_memory_limit_hard=512
 --gtav_android_main_prime=true
