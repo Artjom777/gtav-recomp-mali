@@ -128,7 +128,7 @@ public class GameActivity extends SDLActivity {
 
     /** The release defaults (tools/android/args.txt): files/args.txt lines come after and win. */
     private static final String[] RELEASE_ARGS = {
-        "--headless=true", "--log_level=info", "--gtav_native=on",
+        "--log_level=info", "--gtav_native=on",
         "--clock_no_scaling=true", "--gtav_fps_limit=0", "--vsync=false",
         "--gtav_native_vsync=false", "--gtav_native_fps=true",
         "--gpu_skip_rendering=true", "--gpu_skip_rendering_lag_ms=4",

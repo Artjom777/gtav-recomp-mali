@@ -1,5 +1,4 @@
 # POCO X7 Pro (MediaTek Dimensity 8400-Ultra / Mali-G720 MC7) High-FPS No-Lag Native Config
---headless=true
 --log_level=info
 --gtav_native=on
 --gpu_skip_rendering=true
