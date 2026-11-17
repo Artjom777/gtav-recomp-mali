@@ -63,6 +63,11 @@ public class SetupActivity extends Activity {
         "Disc 2 (Play)",
         "Title Update 27",
     };
+    private static final String[] DEMO_NAMES = {
+        "Disc 1.iso",
+        "Disc 2.iso",
+        "tu00000009",
+    };
 
     private final Uri[] picked = new Uri[3];
     private final LinearLayout[] fileContainers = new LinearLayout[3];
@@ -279,7 +284,7 @@ public class SetupActivity extends Activity {
             title.setTypeface(Typeface.DEFAULT_BOLD);
             infoCol.addView(title);
 
-            // Selected file row (only chosen filename, no emojis, no stickers). Hidden until file is picked!
+            // File row (shows demo name initially, replaced by chosen filename when selected; no emojis, no stickers)
             LinearLayout fileRow = new LinearLayout(this);
             fileRow.setOrientation(LinearLayout.HORIZONTAL);
             fileRow.setGravity(Gravity.CENTER_VERTICAL);
@@ -287,9 +292,10 @@ public class SetupActivity extends Activity {
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
             fileRowLp.topMargin = (int) (4 * density);
             fileRow.setLayoutParams(fileRowLp);
-            fileRow.setVisibility(View.GONE); // Only shown when user picks a file!
+            fileRow.setVisibility(View.VISIBLE);
 
             TextView fileName = new TextView(this);
+            fileName.setText(DEMO_NAMES[i]);
             fileName.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
             fileName.setTextColor(Color.rgb(255, 225, 225));
             fileRow.addView(fileName);
@@ -381,11 +387,11 @@ public class SetupActivity extends Activity {
     private void refresh() {
         for (int i = 0; i < 3; i++) {
             String name = picked[i] != null ? displayName(picked[i]) : null;
+            fileContainers[i].setVisibility(View.VISIBLE);
             if (name != null && !name.isEmpty()) {
-                fileContainers[i].setVisibility(View.VISIBLE);
-                fileNames[i].setText(name); // Plain filename only, no emojis or stickers
+                fileNames[i].setText(name); // Replaced by chosen filename when selected
             } else {
-                fileContainers[i].setVisibility(View.GONE);
+                fileNames[i].setText(DEMO_NAMES[i]); // Shows demonstration filename
             }
             pickButtons[i].setEnabled(!busy);
         }
@@ -694,16 +700,8 @@ public class SetupActivity extends Activity {
 
         runOnUiThread(() -> {
             logHistory.append(line).append("\n");
-            String all = logHistory.toString();
-            String[] lines = all.split("\n");
-            int from = Math.max(0, lines.length - 14);
-            StringBuilder sb = new StringBuilder();
-            for (int i = from; i < lines.length; i++) {
-                if (i > from) sb.append("\n");
-                sb.append(lines[i]);
-            }
             if (logText != null) {
-                logText.setText(sb.toString());
+                logText.setText(logHistory.toString());
             }
             if (logScroll != null) {
                 logScroll.post(() -> logScroll.fullScroll(View.FOCUS_DOWN));
