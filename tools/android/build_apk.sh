@@ -84,6 +84,9 @@ fi
 "$LLVM_STRIP" --strip-debug stage/lib/arm64-v8a/*.so
 mkdir -p stage/assets
 cp "$ROOT/tools/android/args.txt" stage/assets/args.txt
+if [ -d "$APP/assets" ]; then
+  cp -r "$APP/assets/"* stage/assets/
+fi
 
 # Embed game pack (gtav-android-pack.zip) if provided or found
 PACK_ZIP=${PACK_ZIP:-""}

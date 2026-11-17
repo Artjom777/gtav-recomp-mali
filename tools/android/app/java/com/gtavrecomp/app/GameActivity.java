@@ -133,7 +133,7 @@ public class GameActivity extends SDLActivity {
         "--gtav_native_vsync=false", "--gtav_native_fps=true",
         "--gpu_skip_rendering=true", "--gpu_skip_rendering_lag_ms=4",
         "--vulkan_log_debug_messages=false",
-        "--window_presenter=false", "--gtav_native_texture_budget_mb=768",
+        "--window_presenter=false", "--gtav_native_texture_budget_mb=1536",
         "--gtav_native_rect_gs=false", "--gtav_native_fetch_resolves=false",
         "--vulkan_require_vertex_pipeline_stores_and_atomics=false",
         "--vulkan_require_geometry_shader=false",
@@ -146,11 +146,11 @@ public class GameActivity extends SDLActivity {
         "--gtav_native_pipeline_wait_ms=0.0",
         "--gtav_native_render_scale=1.0",
         "--gtav_native_max_anisotropy=2",
-        "--gtav_native_record_thread=false",
+        "--gtav_native_record_thread=true",
         "--gtav_native_convert_threads=4",
         "--gtav_native_texture_recheck_frames=20",
         "--gtav_native_texture_sample_frames=4",
-        "--gtav_native_exact_barriers=true",
+        "--gtav_native_exact_barriers=false",
         "--gtav_native_load_clears=false",
         "--gtav_native_defer_clears=true",
         "--gtav_native_scissor=true",
@@ -182,13 +182,16 @@ public class GameActivity extends SDLActivity {
 
         File dataRoot = new File(files, "data");
         if (!new File(dataRoot, "data_installed.txt").exists()) {
-            File backupData = new File("/storage/emulated/0/gtav/data_backup/data");
-            if (new File(backupData, "data_installed.txt").exists()) {
-                dataRoot = backupData;
-            } else {
-                File directData = new File("/storage/emulated/0/gtav/data");
-                if (new File(directData, "data_installed.txt").exists()) {
-                    dataRoot = directData;
+            File[] dataCandidates = {
+                new File("/storage/emulated/0/gtav/data"),
+                new File("/storage/emulated/0/gtav/data_backup/data"),
+                new File("/sdcard/gtav/data"),
+                new File("/sdcard/gtav/data_backup/data")
+            };
+            for (File d : dataCandidates) {
+                if (new File(d, "data_installed.txt").exists()) {
+                    dataRoot = d;
+                    break;
                 }
             }
         }
@@ -196,8 +199,19 @@ public class GameActivity extends SDLActivity {
         if (new File(dataRoot, "data_installed.txt").exists()) {
             // Installed by the setup screen (install.cpp RunDataInstall layout).
             File userData = new File(dataRoot, "user");
-            if (!userData.exists()) {
-                userData = new File(files, "data/user");
+            if (!userData.exists() || !new File(userData, "0000000000000000").exists()) {
+                File[] userCandidates = {
+                    new File("/storage/emulated/0/gtav/data/user"),
+                    new File("/storage/emulated/0/gtav/data_backup/data/user"),
+                    new File("/sdcard/gtav/data/user"),
+                    new File(files, "data/user")
+                };
+                for (File u : userCandidates) {
+                    if (u.exists() && (new File(u, "0000000000000000").exists() || new File(u, "545408A7").exists())) {
+                        userData = u;
+                        break;
+                    }
+                }
             }
             userData.mkdirs();
             args.add("--game_data_root=" + dataRoot.getAbsolutePath() + "/game");

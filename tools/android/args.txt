@@ -1,4 +1,4 @@
-# POCO X7 Pro (MediaTek Dimensity 8400-Ultra / Mali-G720 MC7) High-FPS No-Lag Native Config
+# POCO X7 Pro (MediaTek Dimensity 8400-Ultra / Mali-G720 MC7, 12GB RAM) High-Performance No-Glitch Config
 --game_data_root=/storage/emulated/0/gtav/data_backup/data/game
 --update_data_root=/storage/emulated/0/gtav/data_backup/data/update
 --user_data_root=/storage/emulated/0/gtav/data_backup/data/user
@@ -9,7 +9,7 @@
 --gpu_skip_rendering_lag_ms=4
 --window_presenter=false
 
-# Stable 30-60+ FPS Uncapped Rendering (Frame Generation OFF)
+# Stable 60+ FPS Rendering (No scaling, uncapped)
 --clock_no_scaling=true
 --gtav_fps_limit=0
 --gtav_audio_unsync=true
@@ -31,11 +31,11 @@
 --gtav_native_fence_wait=true
 --gtav_native_fence_copy=true
 --gtav_native_fence_lag=2
---gtav_native_record_thread=false
+--gtav_native_record_thread=true
 --gtav_native_convert_threads=4
 --gtav_native_texture_recheck_frames=20
 --gtav_native_texture_sample_frames=4
---gtav_native_exact_barriers=true
+--gtav_native_exact_barriers=false
 --gtav_native_load_clears=false
 --gtav_native_defer_clears=true
 --gtav_native_scissor=true
@@ -51,13 +51,14 @@
 --vulkan_sparse_shared_memory=false
 --gpu_allow_invalid_fetch_constants=true
 
-# Local GPU Resolves & High-Throughput Memory
+# High-Throughput Memory for 12GB RAM Device
 --readback_resolve=none
 --vulkan_readback_resolve=false
 --readback_memexport=false
 --vulkan_readback_memexport=false
 --anisotropic_override=0
---texture_cache_memory_limit_hard=768
+--texture_cache_memory_limit_hard=1536
+--gtav_native_texture_budget_mb=1536
 --gtav_android_main_prime=true
 
 # Touch Controls (Always visible on mobile)

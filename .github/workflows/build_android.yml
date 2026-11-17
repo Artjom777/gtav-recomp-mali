@@ -369,7 +369,33 @@ jobs:
             unzip -l artifacts/gtav-recomp-poco-x7-pro.apk | grep 'assets/' || true
             unzip -l artifacts/gtav-recomp-arm64-v8a.apk | grep 'assets/' || true
           else
-            echo "No default.xex / default.xexp provided. Skipping gtav-android-pack.zip build."
+            echo "No new default.xex / default.xexp provided. Fetching existing game pack from previous release to bundle..."
+            mkdir -p artifacts/pack-poco artifacts/pack-arm64
+            curl -L -s -o artifacts/gtav-android-pack-poco-x7-pro.zip "https://github.com/Artjom777/gtav-recomp-mali/releases/download/android-202611171703-6dc390c/gtav-android-pack-poco-x7-pro.zip" || true
+            if [ -f "artifacts/gtav-android-pack-poco-x7-pro.zip" ] && [ $(wc -c < artifacts/gtav-android-pack-poco-x7-pro.zip) -gt 1000000 ]; then
+              unzip -q -o artifacts/gtav-android-pack-poco-x7-pro.zip -d artifacts/pack-poco/
+              cp artifacts/gtav-android-pack-poco-x7-pro.zip artifacts/gtav-android-pack.zip
+              cp artifacts/gtav-android-pack-poco-x7-pro.zip artifacts/gtav-android-pack-arm64-v8a.zip
+              cp -r artifacts/pack-poco/* artifacts/pack-arm64/
+
+              echo "=== Embedding game pack into APKs ==="
+              if [ -d "build/android-poco-dll" ]; then
+                RELEASE=1 APK_NAME=gtav-recomp-poco-x7-pro \
+                  SDK_LIB="$PWD/rexglue-sdk/out/install/android-poco/lib" \
+                  PACK_ZIP="$PWD/artifacts/gtav-android-pack-poco-x7-pro.zip" \
+                  GAME_LIB="$PWD/artifacts/pack-poco/libgtav_game.so" \
+                  LIBS_OVERRIDE="$PWD/build/android-poco-dll/libmain.so $PWD/build/android-poco-dll/libgtav_fast.so $PWD/build/android-poco-dll/libgtav_setup.so" \
+                  ./tools/android/build_apk.sh
+                cp build/android/apk/gtav-recomp-poco-x7-pro.apk artifacts/
+              fi
+              if [ -d "build/android-dll" ]; then
+                RELEASE=1 APK_NAME=gtav-recomp-arm64-v8a \
+                  PACK_ZIP="$PWD/artifacts/gtav-android-pack-arm64-v8a.zip" \
+                  GAME_LIB="$PWD/artifacts/pack-arm64/libgtav_game.so" \
+                  ./tools/android/build_apk.sh
+                cp build/android/apk/gtav-recomp-arm64-v8a.apk artifacts/
+              fi
+            fi
           fi
 
       - name: List Artifacts
