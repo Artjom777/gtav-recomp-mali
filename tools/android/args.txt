@@ -1,4 +1,7 @@
 # POCO X7 Pro (MediaTek Dimensity 8400-Ultra / Mali-G720 MC7) High-FPS No-Lag Native Config
+--game_data_root=/storage/emulated/0/gtav/data_backup/data/game
+--update_data_root=/storage/emulated/0/gtav/data_backup/data/update
+--user_data_root=/storage/emulated/0/gtav/data_backup/data/user
 --log_level=info
 --headless=false
 --gtav_native=on

@@ -195,10 +195,14 @@ public class GameActivity extends SDLActivity {
 
         if (new File(dataRoot, "data_installed.txt").exists()) {
             // Installed by the setup screen (install.cpp RunDataInstall layout).
-            new File(files, "data/user").mkdirs();
+            File userData = new File(dataRoot, "user");
+            if (!userData.exists()) {
+                userData = new File(files, "data/user");
+            }
+            userData.mkdirs();
             args.add("--game_data_root=" + dataRoot.getAbsolutePath() + "/game");
             args.add("--update_data_root=" + dataRoot.getAbsolutePath() + "/update");
-            args.add("--user_data_root=" + files.getAbsolutePath() + "/data/user");
+            args.add("--user_data_root=" + userData.getAbsolutePath());
         } else {
             // Developer layout (pushed with adb).
             new File(files, "userdata").mkdirs();
