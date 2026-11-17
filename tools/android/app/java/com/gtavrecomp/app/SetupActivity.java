@@ -43,12 +43,11 @@ import java.util.zip.ZipInputStream;
 
 /**
  * Modern GTA V Setup Screen.
- * Displays clean 3-disc installation options (Disc 1, Disc 2, Title Update 27) over the iconic
- * GTA V beach artwork. The game pack (gtav-android-pack.zip) is embedded directly into the APK assets
- * and extracted automatically.
- *
- * Selected filenames appear in place of placeholder demonstrations only once selected.
- * Real-time installation logs with [mm:ss] timestamps appear directly under the Install button.
+ * 3-disc installation (Disc 1, Disc 2, Title Update 27) over GTA V beach artwork.
+ * Game pack (gtav-android-pack.zip) is embedded in APK assets and extracted automatically.
+ * No emojis, no stickers anywhere.
+ * Filenames appear only when selected.
+ * Logs are always located below the Install button.
  */
 public class SetupActivity extends Activity {
     private static final String TAG = "GtavSetup";
@@ -63,11 +62,6 @@ public class SetupActivity extends Activity {
         "Disc 1 (Install)",
         "Disc 2 (Play)",
         "Title Update 27",
-    };
-    private static final String[] ICONS = {
-        "\uD83D\uDCC4 ", // document icon
-        "\uD83D\uDCBF ", // disc icon
-        "\uD83D\uDCE6 ", // update package icon
     };
 
     private final Uri[] picked = new Uri[3];
@@ -92,18 +86,6 @@ public class SetupActivity extends Activity {
         prefs = getSharedPreferences("setup", MODE_PRIVATE);
         startTimeMs = SystemClock.elapsedRealtime();
 
-        if (!GameActivity.isReleaseLayout(this)) {
-            startGame();
-            return;
-        }
-        addSetupShortcut();
-
-        boolean again = getIntent() != null && getIntent().getBooleanExtra(EXTRA_SETUP, false);
-        if (!again && packCurrent() == null && isDataInstalled()) {
-            startGame();
-            return;
-        }
-
         for (int i = 0; i < 3; i++) {
             String s = prefs.getString("disc_uri_" + i, null);
             if (s != null) {
@@ -117,37 +99,16 @@ public class SetupActivity extends Activity {
         setContentView(buildUi());
         refresh();
 
-        // Check if game pack is already installed or needs automatic extraction from APK assets
+        // Check if game pack needs automatic extraction from APK assets
         if (packCurrent() != null && (hasBundledPack() || findLocalPack() != null)) {
             autoExtractPack();
         } else if (packCurrent() == null) {
             appendLog("Game pack verified.");
             if (isDataInstalled()) {
-                appendLog("Game files verified. Ready to play!");
+                appendLog("Game files verified.");
             } else {
                 appendLog("Choose game discs below to begin installation.");
             }
-        }
-    }
-
-    private static final String EXTRA_SETUP = "com.gtavrecomp.app.SETUP";
-
-    private void addSetupShortcut() {
-        try {
-            android.content.pm.ShortcutManager sm = getSystemService(android.content.pm.ShortcutManager.class);
-            if (sm == null) return;
-            Intent i = new Intent(this, SetupActivity.class)
-                .setAction(Intent.ACTION_MAIN)
-                .putExtra(EXTRA_SETUP, true)
-                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-            android.content.pm.ShortcutInfo info = new android.content.pm.ShortcutInfo.Builder(this, "setup")
-                .setShortLabel("Run setup again")
-                .setLongLabel("Run setup again (change discs or pack)")
-                .setIntent(i)
-                .build();
-            sm.setDynamicShortcuts(java.util.Collections.singletonList(info));
-        } catch (Exception e) {
-            Log.w(TAG, "shortcut: " + e);
         }
     }
 
@@ -184,20 +145,7 @@ public class SetupActivity extends Activity {
     }
 
     private boolean isDataInstalled() {
-        if (nativeIsDataInstalled(home().getAbsolutePath())) return true;
-        File[] candidates = {
-            new File("/storage/emulated/0/gtav/data"),
-            new File("/storage/emulated/0/gtav/data_backup/data"),
-            new File("/sdcard/gtav/data"),
-            new File(home(), "data")
-        };
-        for (File dir : candidates) {
-            if (new File(dir, "data_installed.txt").exists() &&
-                (new File(dir, "game/default.xex").exists() || new File(dir, "game").exists())) {
-                return true;
-            }
-        }
-        return false;
+        return nativeIsDataInstalled(home().getAbsolutePath());
     }
 
     private String packCurrent() {
@@ -331,7 +279,7 @@ public class SetupActivity extends Activity {
             title.setTypeface(Typeface.DEFAULT_BOLD);
             infoCol.addView(title);
 
-            // Selected file row (icon + chosen filename). Hidden until file is picked!
+            // Selected file row (only chosen filename, no emojis, no stickers). Hidden until file is picked!
             LinearLayout fileRow = new LinearLayout(this);
             fileRow.setOrientation(LinearLayout.HORIZONTAL);
             fileRow.setGravity(Gravity.CENTER_VERTICAL);
@@ -372,9 +320,9 @@ public class SetupActivity extends Activity {
             panel.addView(card);
         }
 
-        // Install Button (Wide coral/salmon red button matching the card width)
+        // Install Button (Wide coral/salmon red button matching the card width, no stickers)
         installBtn = new Button(this);
-        installBtn.setText("⬇  Install");
+        installBtn.setText("Install");
         installBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
         installBtn.setTextColor(Color.WHITE);
         installBtn.setTypeface(Typeface.DEFAULT_BOLD);
@@ -435,7 +383,7 @@ public class SetupActivity extends Activity {
             String name = picked[i] != null ? displayName(picked[i]) : null;
             if (name != null && !name.isEmpty()) {
                 fileContainers[i].setVisibility(View.VISIBLE);
-                fileNames[i].setText(ICONS[i] + name);
+                fileNames[i].setText(name); // Plain filename only, no emojis or stickers
             } else {
                 fileContainers[i].setVisibility(View.GONE);
             }
@@ -445,11 +393,8 @@ public class SetupActivity extends Activity {
         if (busy) {
             installBtn.setText("Cancel");
             installBtn.setEnabled(true);
-        } else if (isDataInstalled()) {
-            installBtn.setText("▶  Launch Game");
-            installBtn.setEnabled(true);
         } else {
-            installBtn.setText("⬇  Install");
+            installBtn.setText("Install");
             installBtn.setEnabled(true);
         }
     }
@@ -491,7 +436,6 @@ public class SetupActivity extends Activity {
     private void autoExtractPack() {
         busy = true;
         refresh();
-        appendLog("Game pack detected in APK assets.");
         appendLog("Extracting bundled game pack...");
         new Thread(() -> {
             String err = importBundledPack();
@@ -499,13 +443,8 @@ public class SetupActivity extends Activity {
                 busy = false;
                 refresh();
                 if (err == null) {
-                    appendLog("Game pack successfully installed.");
-                    if (isDataInstalled()) {
-                        appendLog("Game files verified. Ready to launch!");
-                        startGame();
-                    } else {
-                        appendLog("Choose game discs to finish installation.");
-                    }
+                    appendLog("Game pack ready.");
+                    appendLog("Choose game discs below to begin installation.");
                 } else {
                     appendLog("Pack error: " + err);
                     message("Pack Error", err);
@@ -521,7 +460,6 @@ public class SetupActivity extends Activity {
             return;
         }
 
-        // If game data is already installed, launch immediately
         if (isDataInstalled() && packCurrent() == null) {
             appendLog("Launching GTA V...");
             startGame();
