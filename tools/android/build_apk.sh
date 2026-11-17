@@ -61,8 +61,32 @@ cp "${LIBS[@]}" "$SDK_LIB/librexruntime.so" "$SDK_LIB/librexgpu-xenos.so" \
 "$LLVM_STRIP" --strip-debug stage/lib/arm64-v8a/*.so
 mkdir -p stage/assets
 cp "$ROOT/tools/android/args.txt" stage/assets/args.txt
+
+# Embed game pack (gtav-android-pack.zip) if provided or found
+PACK_ZIP=${PACK_ZIP:-""}
+if [ -z "$PACK_ZIP" ]; then
+  for p in "$ROOT/artifacts/gtav-android-pack-$NAME.zip" \
+           "$ROOT/artifacts/gtav-android-pack-poco-x7-pro.zip" \
+           "$ROOT/artifacts/gtav-android-pack-arm64-v8a.zip" \
+           "$ROOT/artifacts/gtav-android-pack.zip" \
+           "$ROOT/gtav-android-pack.zip" \
+           "/workspace/gtav-android-pack.zip" \
+           "/storage/emulated/0/gtav/gtav-android-pack-poco-x7-pro.zip" \
+           "/storage/emulated/0/gtav/gtav-android-pack.zip"; do
+    if [ -f "$p" ]; then
+      PACK_ZIP="$p"
+      break
+    fi
+  done
+fi
+
+if [ -n "$PACK_ZIP" ] && [ -f "$PACK_ZIP" ]; then
+  echo "=== Embedding game pack: $PACK_ZIP into assets/gtav-android-pack.zip ($(ls -lh "$PACK_ZIP" | awk '{print $5}')) ==="
+  cp "$PACK_ZIP" stage/assets/gtav-android-pack.zip
+fi
+
 cp base.apk unaligned.apk
-(cd stage && zip -q -X ../unaligned.apk classes.dex && zip -q -X -0 -r ../unaligned.apk lib && zip -q -X -r ../unaligned.apk assets)
+(cd stage && zip -q -X ../unaligned.apk classes.dex && zip -q -X -0 -r ../unaligned.apk lib && zip -q -X -0 -r ../unaligned.apk assets)
 
 "$BT/zipalign" -f -P 16 4 unaligned.apk aligned.apk
 if [ ! -f "$KEY" ]; then
@@ -76,6 +100,9 @@ ls -la "$NAME.apk"
 
 echo "=== Packaged native libraries in $NAME.apk: ==="
 unzip -l "$NAME.apk" | grep 'lib/arm64-v8a/' || true
+
+echo "=== Packaged assets in $NAME.apk: ==="
+unzip -l "$NAME.apk" | grep 'assets/' || true
 
 mkdir -p "$OUT/libs/$NAME"
 cp stage/lib/arm64-v8a/*.so "$OUT/libs/$NAME/"

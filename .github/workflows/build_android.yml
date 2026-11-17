@@ -305,11 +305,11 @@ jobs:
             echo "POCO shell hash: $POCO_HASH"
             echo "ARM64 shell hash: $ARM64_HASH"
 
-            # 4. Write pack.txt with BOTH hashes so any pack is recognized by both APKs
-            printf "gtav-recomp android pack 1\nshell %s\nshell %s\n" "$POCO_HASH" "$ARM64_HASH" > artifacts/pack-poco/pack.txt
+            # 4. Write pack.txt with BOTH hashes and shell any so any pack is recognized by both APKs
+            printf "gtav-recomp android pack 1\nshell %s\nshell %s\nshell any\n" "$POCO_HASH" "$ARM64_HASH" > artifacts/pack-poco/pack.txt
             cp tools/release/expected.txt artifacts/pack-poco/expected.txt
 
-            printf "gtav-recomp android pack 1\nshell %s\nshell %s\n" "$POCO_HASH" "$ARM64_HASH" > artifacts/pack-arm64/pack.txt
+            printf "gtav-recomp android pack 1\nshell %s\nshell %s\nshell any\n" "$POCO_HASH" "$ARM64_HASH" > artifacts/pack-arm64/pack.txt
             cp tools/release/expected.txt artifacts/pack-arm64/expected.txt
 
             # 5. Shaders: translate shader_cache to SPIR-V (.spv) for Android
@@ -342,6 +342,30 @@ jobs:
 
             echo "=== Created game packs successfully! ==="
             ls -lh artifacts/gtav-android-pack*.zip
+
+            # 7. Package self-contained APKs with embedded game pack
+            echo "=== Embedding game packs into APKs ==="
+            if [ -f "artifacts/gtav-android-pack-poco-x7-pro.zip" ] && [ -d "build/android-poco-dll" ]; then
+              echo "Packaging self-contained POCO X7 Pro APK with embedded gtav-android-pack.zip..."
+              RELEASE=1 APK_NAME=gtav-recomp-poco-x7-pro \
+                SDK_LIB="$PWD/rexglue-sdk/out/install/android-poco/lib" \
+                PACK_ZIP="$PWD/artifacts/gtav-android-pack-poco-x7-pro.zip" \
+                LIBS_OVERRIDE="$PWD/build/android-poco-dll/libmain.so $PWD/build/android-poco-dll/libgtav_fast.so $PWD/build/android-poco-dll/libgtav_setup.so" \
+                ./tools/android/build_apk.sh
+              cp build/android/apk/gtav-recomp-poco-x7-pro.apk artifacts/
+            fi
+
+            if [ -f "artifacts/gtav-android-pack-arm64-v8a.zip" ] && [ -d "build/android-dll" ]; then
+              echo "Packaging self-contained Standard ARM64 APK with embedded gtav-android-pack.zip..."
+              RELEASE=1 APK_NAME=gtav-recomp-arm64-v8a \
+                PACK_ZIP="$PWD/artifacts/gtav-android-pack-arm64-v8a.zip" \
+                ./tools/android/build_apk.sh
+              cp build/android/apk/gtav-recomp-arm64-v8a.apk artifacts/
+            fi
+
+            echo "=== Verification: Embedded pack in APKs ==="
+            unzip -l artifacts/gtav-recomp-poco-x7-pro.apk | grep 'assets/' || true
+            unzip -l artifacts/gtav-recomp-arm64-v8a.apk | grep 'assets/' || true
           else
             echo "No default.xex / default.xexp provided. Skipping gtav-android-pack.zip build."
           fi

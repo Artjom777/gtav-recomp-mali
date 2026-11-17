@@ -99,6 +99,13 @@ public class GameActivity extends SDLActivity {
                 }
             }
         }
+        if (isReleaseLayout(this) && !new File(getFilesDir(), "libgtav_game.so").exists()) {
+            Log.w(TAG, "libgtav_game.so missing, redirecting to SetupActivity");
+            startActivity(new android.content.Intent(this, SetupActivity.class));
+            finish();
+            return;
+        }
+
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }

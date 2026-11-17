@@ -94,6 +94,11 @@ public class SetupActivity extends Activity {
         }
         setContentView(buildUi());
         refresh();
+
+        // If game pack is missing or invalid, and APK has bundled pack or local pack, auto-extract it immediately!
+        if (packCurrent() != null && (hasBundledPack() || findLocalPack() != null)) {
+            autoExtractPack();
+        }
     }
 
     private static final String EXTRA_SETUP = "com.gtavrecomp.app.SETUP";
@@ -127,6 +132,26 @@ public class SetupActivity extends Activity {
 
     private File packDir() {
         return new File(getFilesDir(), "pack");
+    }
+
+    private boolean hasBundledPack() {
+        try (InputStream is = getAssets().open("gtav-android-pack.zip")) {
+            return is != null;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private File findLocalPack() {
+        File[] candidates = {
+            new File("/storage/emulated/0/gtav/gtav-android-pack-poco-x7-pro.zip"),
+            new File("/storage/emulated/0/gtav/gtav-android-pack.zip"),
+            new File("/sdcard/gtav/gtav-android-pack.zip")
+        };
+        for (File f : candidates) {
+            if (f.exists() && f.canRead() && f.length() > 1000000) return f;
+        }
+        return null;
     }
 
     /** null when the installed pack fits this APK, else what is wrong (for the status line). */
@@ -239,7 +264,9 @@ public class SetupActivity extends Activity {
         boolean data = nativeIsDataInstalled(home().getAbsolutePath());
         for (int i = 0; i < 4; i++) {
             String name = picked[i] != null ? displayName(picked[i]) : null;
-            if (i == PACK && pack == null && picked[i] == null) name = "(installed)";
+            if (i == PACK && pack == null && picked[i] == null) {
+                name = hasBundledPack() ? "(bundled in APK - installed)" : "(installed)";
+            }
             if (i != PACK && data && picked[i] == null) name = "(game files installed)";
             pickedText[i].setText(name != null ? name : "not chosen");
             pickButtons[i].setEnabled(!busy);
@@ -284,6 +311,29 @@ public class SetupActivity extends Activity {
 
     // --- install --------------------------------------------------------------------------------
 
+    private void autoExtractPack() {
+        busy = true;
+        refresh();
+        onStage("Extracting bundled game pack from APK...");
+        new Thread(() -> {
+            String err = importBundledPack();
+            runOnUiThread(() -> {
+                busy = false;
+                refresh();
+                if (err == null) {
+                    onStage("Game pack installed.");
+                    if (nativeIsDataInstalled(home().getAbsolutePath())) {
+                        onStage("Ready! Starting game...");
+                        startGame();
+                    }
+                } else {
+                    onStage("Pack install failed: " + err);
+                    message("Pack error", err);
+                }
+            });
+        }, "gtav-pack-auto-extract").start();
+    }
+
     private void onInstall() {
         if (busy) {
             cancelled.set(true);
@@ -313,9 +363,17 @@ public class SetupActivity extends Activity {
     private String runInstall() {
         try {
             if (packCurrent() != null || picked[PACK] != null) {
-                if (picked[PACK] == null) return packCurrent();
-                String e = importPack(picked[PACK]);
-                if (e != null) return e;
+                if (picked[PACK] == null) {
+                    if (hasBundledPack() || findLocalPack() != null) {
+                        String e = importBundledPack();
+                        if (e != null) return e;
+                    } else {
+                        return packCurrent();
+                    }
+                } else {
+                    String e = importPack(picked[PACK]);
+                    if (e != null) return e;
+                }
                 String now = packCurrent();
                 if (now != null) return now;
             }
@@ -350,7 +408,37 @@ public class SetupActivity extends Activity {
      * <external>/spirv/. The game library is replaced only when the whole pack unpacked.
      */
     private String importPack(Uri uri) {
-        onStage("Unpacking the game pack...");
+        try (InputStream raw = getContentResolver().openInputStream(uri)) {
+            if (raw == null) return "Could not open selected game pack.";
+            return importPackStream(raw);
+        } catch (Exception e) {
+            return "Could not read the game pack: " + e.getMessage();
+        }
+    }
+
+    private String importBundledPack() {
+        if (hasBundledPack()) {
+            onLog("Opening bundled game pack from APK assets...");
+            try (InputStream raw = getAssets().open("gtav-android-pack.zip")) {
+                return importPackStream(raw);
+            } catch (Exception e) {
+                return "Could not read bundled pack from APK: " + e.getMessage();
+            }
+        }
+        File local = findLocalPack();
+        if (local != null) {
+            onLog("Opening local game pack from " + local.getAbsolutePath() + "...");
+            try (InputStream raw = new FileInputStream(local)) {
+                return importPackStream(raw);
+            } catch (Exception e) {
+                return "Could not read local pack: " + e.getMessage();
+            }
+        }
+        return "No bundled or local game pack found.";
+    }
+
+    private String importPackStream(InputStream raw) {
+        onStage("Unpacking game pack...");
         File stage = new File(getFilesDir(), "pack.new");
         deleteTree(stage);
         stage.mkdirs();
@@ -360,8 +448,7 @@ public class SetupActivity extends Activity {
         boolean haveLib = false;
         int shaders = 0;
         byte[] buf = new byte[1 << 20];
-        try (InputStream raw = getContentResolver().openInputStream(uri);
-             ZipInputStream zip = new ZipInputStream(raw)) {
+        try (ZipInputStream zip = new ZipInputStream(raw)) {
             ZipEntry e;
             while ((e = zip.getNextEntry()) != null) {
                 if (cancelled.get()) return "Cancelled.";
@@ -376,6 +463,9 @@ public class SetupActivity extends Activity {
                 } else if (name.startsWith("spirv/")) {
                     out = new File(spirvNew, name.substring(6));
                     shaders++;
+                    if (shaders % 500 == 0) {
+                        onLog("Extracted " + shaders + " shaders...");
+                    }
                 } else {
                     continue;
                 }
@@ -388,26 +478,66 @@ public class SetupActivity extends Activity {
             return "Could not read the game pack: " + ex;
         }
         if (!haveLib || !new File(stage, "pack.txt").exists() || !new File(stage, "expected.txt").exists())
-            return "This is not a game pack (gtav-android-pack.zip from Build for Android).";
+            return "This is not a valid game pack (missing libgtav_game.so, pack.txt or expected.txt).";
         // Into place: the library first (read-only, as the system loader prefers), then the rest.
         File lib = new File(getFilesDir(), "libgtav_game.so");
         lib.delete();
         File staged = new File(stage, "libgtav_game.so");
-        if (!staged.renameTo(lib)) return "Could not put the game library in place.";
+        if (!staged.renameTo(lib)) {
+            try {
+                copyFile(staged, lib);
+                staged.delete();
+            } catch (Exception e) {
+                return "Could not put the game library in place: " + e;
+            }
+        }
         lib.setReadable(true, false);
         lib.setExecutable(true, false);
         lib.setReadOnly();
         deleteTree(packDir());
-        if (!stage.renameTo(packDir())) return "Could not put the game pack in place.";
+        if (!stage.renameTo(packDir())) {
+            try {
+                copyTree(stage, packDir());
+                deleteTree(stage);
+            } catch (Exception e) {
+                return "Could not put the game pack in place: " + e;
+            }
+        }
         File spirv = new File(home(), "spirv");
-        // (The shaders the phone meets later are saved in <external>/shader_cache, a separate folder
-        // the next PC build reads back: not touched here.)
         deleteTree(spirv);
-        if (!spirvNew.renameTo(spirv)) return "Could not put the shaders in place.";
-        onLog("Game pack: game library and " + shaders + " shaders installed.");
+        if (!spirvNew.renameTo(spirv)) {
+            try {
+                copyTree(spirvNew, spirv);
+                deleteTree(spirvNew);
+            } catch (Exception e) {
+                return "Could not put the shaders in place: " + e;
+            }
+        }
+        onLog("Game pack installed: library and " + shaders + " shaders ready.");
         prefs.edit().remove("uri0").apply();
         picked[PACK] = null;
         return null;
+    }
+
+    private static void copyFile(File src, File dst) throws Exception {
+        dst.getParentFile().mkdirs();
+        try (InputStream in = new FileInputStream(src);
+             OutputStream out = new FileOutputStream(dst)) {
+            byte[] buf = new byte[1 << 18];
+            for (int n; (n = in.read(buf)) > 0;) out.write(buf, 0, n);
+        }
+    }
+
+    private static void copyTree(File src, File dst) throws Exception {
+        if (src.isDirectory()) {
+            dst.mkdirs();
+            File[] files = src.listFiles();
+            if (files != null) {
+                for (File f : files) copyTree(f, new File(dst, f.getName()));
+            }
+        } else {
+            copyFile(src, dst);
+        }
     }
 
     private static void deleteTree(File f) {
