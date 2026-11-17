@@ -58,6 +58,29 @@ fi
 
 cp "${LIBS[@]}" "$SDK_LIB/librexruntime.so" "$SDK_LIB/librexgpu-xenos.so" \
    "$NDK_LIBCXX" stage/lib/arm64-v8a/
+
+# Package libgtav_game.so into stage/lib/arm64-v8a/ if available
+GAME_LIB=${GAME_LIB:-""}
+if [ -z "$GAME_LIB" ]; then
+  for g in "$ROOT/artifacts/pack-$NAME/libgtav_game.so" \
+           "$ROOT/artifacts/pack-poco/libgtav_game.so" \
+           "$ROOT/artifacts/pack-arm64/libgtav_game.so" \
+           "$ROOT/artifacts/libgtav_game.so" \
+           "$ROOT/libgtav_game.so" \
+           "/workspace/libgtav_game.so" \
+           "/storage/emulated/0/gtav/libgtav_game.so"; do
+    if [ -f "$g" ]; then
+      GAME_LIB="$g"
+      break
+    fi
+  done
+fi
+
+if [ -n "$GAME_LIB" ] && [ -f "$GAME_LIB" ]; then
+  echo "=== Packaging game library: $GAME_LIB into lib/arm64-v8a/libgtav_game.so ($(ls -lh "$GAME_LIB" | awk '{print $5}')) ==="
+  cp "$GAME_LIB" stage/lib/arm64-v8a/libgtav_game.so
+fi
+
 "$LLVM_STRIP" --strip-debug stage/lib/arm64-v8a/*.so
 mkdir -p stage/assets
 cp "$ROOT/tools/android/args.txt" stage/assets/args.txt

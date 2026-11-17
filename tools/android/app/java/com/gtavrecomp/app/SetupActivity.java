@@ -84,7 +84,7 @@ public class SetupActivity extends Activity {
         // "Run setup again" (long-press the app icon) opens this screen even when the game is
         // installed: to choose a newer pack (README: objects missing -> Build for Android again).
         boolean again = getIntent() != null && getIntent().getBooleanExtra(EXTRA_SETUP, false);
-        if (!again && packCurrent() == null && nativeIsDataInstalled(home().getAbsolutePath())) {
+        if (!again && packCurrent() == null && isDataInstalled()) {
             startGame();
             return;
         }
@@ -154,11 +154,29 @@ public class SetupActivity extends Activity {
         return null;
     }
 
+    private boolean isDataInstalled() {
+        if (nativeIsDataInstalled(home().getAbsolutePath())) return true;
+        File[] candidates = {
+            new File("/storage/emulated/0/gtav/data_backup/data"),
+            new File("/storage/emulated/0/gtav/data"),
+            new File("/sdcard/gtav/data_backup/data"),
+            new File("/sdcard/gtav/data")
+        };
+        for (File dir : candidates) {
+            if (new File(dir, "data_installed.txt").exists() &&
+                (new File(dir, "game/default.xex").exists() || new File(dir, "game").exists())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** null when the installed pack fits this APK, else what is wrong (for the status line). */
     private String packCurrent() {
         File lib = new File(getFilesDir(), "libgtav_game.so");
+        File nativeLib = new File(getApplicationInfo().nativeLibraryDir, "libgtav_game.so");
         File info = new File(packDir(), "pack.txt");
-        if (!lib.exists() || !info.exists()) return "No game pack yet.";
+        if ((!lib.exists() && !nativeLib.exists()) || !info.exists()) return "No game pack yet.";
         String mine = sha256(new File(getApplicationInfo().nativeLibraryDir, "libgtav_fast.so"));
         Log.i(TAG, "Checking game pack. Installed libgtav_fast.so SHA-256: " + mine);
         if (!matchShell(info, mine)) {
@@ -261,7 +279,7 @@ public class SetupActivity extends Activity {
 
     private void refresh() {
         String pack = packCurrent();
-        boolean data = nativeIsDataInstalled(home().getAbsolutePath());
+        boolean data = isDataInstalled();
         for (int i = 0; i < 4; i++) {
             String name = picked[i] != null ? displayName(picked[i]) : null;
             if (i == PACK && pack == null && picked[i] == null) {
@@ -322,7 +340,7 @@ public class SetupActivity extends Activity {
                 refresh();
                 if (err == null) {
                     onStage("Game pack installed.");
-                    if (nativeIsDataInstalled(home().getAbsolutePath())) {
+                    if (isDataInstalled()) {
                         onStage("Ready! Starting game...");
                         startGame();
                     }
@@ -377,7 +395,7 @@ public class SetupActivity extends Activity {
                 String now = packCurrent();
                 if (now != null) return now;
             }
-            if (nativeIsDataInstalled(home().getAbsolutePath())) return null;
+            if (isDataInstalled()) return null;
             for (int i = 1; i < 4; i++) {
                 if (picked[i] == null) return "Choose " + LABELS[i] + ".";
             }
@@ -442,9 +460,8 @@ public class SetupActivity extends Activity {
         File stage = new File(getFilesDir(), "pack.new");
         deleteTree(stage);
         stage.mkdirs();
-        File spirvNew = new File(home(), "spirv.new");
-        deleteTree(spirvNew);
-        spirvNew.mkdirs();
+        File spirvDir = new File(home(), "spirv");
+        spirvDir.mkdirs();
         boolean haveLib = false;
         int shaders = 0;
         byte[] buf = new byte[1 << 20];
@@ -453,7 +470,7 @@ public class SetupActivity extends Activity {
             while ((e = zip.getNextEntry()) != null) {
                 if (cancelled.get()) return "Cancelled.";
                 String name = e.getName();
-                if (e.isDirectory() || name.contains("..") || name.startsWith("/")) continue;
+                if (e.isDirectory() || name.endsWith("/") || name.contains("..") || name.startsWith("/")) continue;
                 File out;
                 if (name.equals("libgtav_game.so")) {
                     out = new File(stage, name);
@@ -461,7 +478,9 @@ public class SetupActivity extends Activity {
                 } else if (name.equals("expected.txt") || name.equals("pack.txt")) {
                     out = new File(stage, name);
                 } else if (name.startsWith("spirv/")) {
-                    out = new File(spirvNew, name.substring(6));
+                    String sub = name.substring(6);
+                    if (sub.isEmpty() || sub.endsWith("/")) continue;
+                    out = new File(spirvDir, sub);
                     shaders++;
                     if (shaders % 500 == 0) {
                         onLog("Extracted " + shaders + " shaders...");
@@ -477,23 +496,31 @@ public class SetupActivity extends Activity {
         } catch (Exception ex) {
             return "Could not read the game pack: " + ex;
         }
+
+        File nativeLib = new File(getApplicationInfo().nativeLibraryDir, "libgtav_game.so");
+        if (nativeLib.exists() && nativeLib.length() > 10000000) {
+            haveLib = true;
+        }
+
         if (!haveLib || !new File(stage, "pack.txt").exists() || !new File(stage, "expected.txt").exists())
             return "This is not a valid game pack (missing libgtav_game.so, pack.txt or expected.txt).";
         // Into place: the library first (read-only, as the system loader prefers), then the rest.
-        File lib = new File(getFilesDir(), "libgtav_game.so");
-        lib.delete();
         File staged = new File(stage, "libgtav_game.so");
-        if (!staged.renameTo(lib)) {
-            try {
-                copyFile(staged, lib);
-                staged.delete();
-            } catch (Exception e) {
-                return "Could not put the game library in place: " + e;
+        if (staged.exists()) {
+            File lib = new File(getFilesDir(), "libgtav_game.so");
+            lib.delete();
+            if (!staged.renameTo(lib)) {
+                try {
+                    copyFile(staged, lib);
+                    staged.delete();
+                } catch (Exception e) {
+                    return "Could not put the game library in place: " + e;
+                }
             }
+            lib.setReadable(true, false);
+            lib.setExecutable(true, false);
+            lib.setReadOnly();
         }
-        lib.setReadable(true, false);
-        lib.setExecutable(true, false);
-        lib.setReadOnly();
         deleteTree(packDir());
         if (!stage.renameTo(packDir())) {
             try {
@@ -501,16 +528,6 @@ public class SetupActivity extends Activity {
                 deleteTree(stage);
             } catch (Exception e) {
                 return "Could not put the game pack in place: " + e;
-            }
-        }
-        File spirv = new File(home(), "spirv");
-        deleteTree(spirv);
-        if (!spirvNew.renameTo(spirv)) {
-            try {
-                copyTree(spirvNew, spirv);
-                deleteTree(spirvNew);
-            } catch (Exception e) {
-                return "Could not put the shaders in place: " + e;
             }
         }
         onLog("Game pack installed: library and " + shaders + " shaders ready.");

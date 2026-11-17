@@ -78,14 +78,14 @@ REXCVAR_DEFINE_INT32(gtav_native_dump_rt_skip, 0, "GTAV",
 // checks; the game streaming new data into a texture showed as stale gray blocks for up to that
 // many frames while moving.
 #ifdef __ANDROID__  // (iOS keeps the Mac's 30: the phone is short of CPU time)
-REXCVAR_DEFINE_INT32(gtav_native_texture_recheck_frames, 60, "GTAV",
+REXCVAR_DEFINE_INT32(gtav_native_texture_recheck_frames, 20, "GTAV",
                      "Frames between full re-checks of a large texture (spot checks in between)");
 #else
 REXCVAR_DEFINE_INT32(gtav_native_texture_recheck_frames, 30, "GTAV",
                      "Frames between full re-checks of a large texture (spot checks in between)");
 #endif
 #if defined(__ANDROID__)
-#define GTAV_TEXTURE_SAMPLE_FRAMES_DEFAULT 60
+#define GTAV_TEXTURE_SAMPLE_FRAMES_DEFAULT 4
 #elif defined(__APPLE__) && TARGET_OS_IPHONE
 #define GTAV_TEXTURE_SAMPLE_FRAMES_DEFAULT 1
 #else

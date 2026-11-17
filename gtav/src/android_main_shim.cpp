@@ -119,19 +119,22 @@ extern "C" __attribute__((visibility("default"))) int SDL_main(int argc, char* a
   std::string path = std::string(files) + "/libgtav_game.so";
   __android_log_print(ANDROID_LOG_INFO, "gtav", "Looking for game library: %s", path.c_str());
 
+  void* game = nullptr;
   struct stat st{};
-  if (stat(path.c_str(), &st) != 0) {
-    Fail("Game library not found: " + path + "\nRun setup and install the game pack first.");
-    return 1;
+  if (stat(path.c_str(), &st) == 0) {
+    __android_log_print(ANDROID_LOG_INFO, "gtav", "Game library size: %zu bytes", (size_t)st.st_size);
+    game = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
   }
-  __android_log_print(ANDROID_LOG_INFO, "gtav", "Game library size: %zu bytes", (size_t)st.st_size);
-
-  void* game = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
+  if (!game) {
+    __android_log_print(ANDROID_LOG_INFO, "gtav", "Trying dlopen('libgtav_game.so') from native library search path...");
+    game = dlopen("libgtav_game.so", RTLD_NOW | RTLD_GLOBAL);
+  }
   if (!game) {
     const char* err = dlerror();
     std::string errStr = err ? err : "unknown dlopen error";
     __android_log_print(ANDROID_LOG_ERROR, "gtav", "dlopen failed: %s", errStr.c_str());
-    Fail("The game is not installed properly or dlopen failed.\n\n" + path + ":\n" + errStr);
+    Fail("Game library not found or dlopen failed:\n\n" + path + ":\n" + errStr +
+         "\n\nRun setup and install the game pack first.");
     return 1;
   }
 

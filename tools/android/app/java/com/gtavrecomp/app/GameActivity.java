@@ -99,7 +99,9 @@ public class GameActivity extends SDLActivity {
                 }
             }
         }
-        if (isReleaseLayout(this) && !new File(getFilesDir(), "libgtav_game.so").exists()) {
+        if (isReleaseLayout(this) &&
+            !new File(getFilesDir(), "libgtav_game.so").exists() &&
+            !new File(getApplicationInfo().nativeLibraryDir, "libgtav_game.so").exists()) {
             Log.w(TAG, "libgtav_game.so missing, redirecting to SetupActivity");
             startActivity(new android.content.Intent(this, SetupActivity.class));
             finish();
@@ -126,9 +128,11 @@ public class GameActivity extends SDLActivity {
 
     /** The release defaults (tools/android/args.txt): files/args.txt lines come after and win. */
     private static final String[] RELEASE_ARGS = {
-        "--headless=true", "--log_level=info", "--gtav_native=on", "--gtav_fps_limit=30",
-        "--gpu_skip_rendering=true", "--gpu_skip_rendering_lag_ms=4", "--vsync=false",
-        "--gtav_native_vsync=true", "--gtav_native_fps=true", "--vulkan_log_debug_messages=false",
+        "--headless=true", "--log_level=info", "--gtav_native=on",
+        "--clock_no_scaling=true", "--gtav_fps_limit=0", "--vsync=false",
+        "--gtav_native_vsync=false", "--gtav_native_fps=true",
+        "--gpu_skip_rendering=true", "--gpu_skip_rendering_lag_ms=4",
+        "--vulkan_log_debug_messages=false",
         "--window_presenter=false", "--gtav_native_texture_budget_mb=768",
         "--gtav_native_rect_gs=false", "--gtav_native_fetch_resolves=false",
         "--vulkan_require_vertex_pipeline_stores_and_atomics=false",
@@ -137,20 +141,34 @@ public class GameActivity extends SDLActivity {
         "--vulkan_sparse_shared_memory=false",
         "--gtav_native_point_float32=true",
         "--gtav_native_draw_clears=true",
-        "--gtav_native_hold_lost_frames=true",
-        "--gtav_native_hold_max_frames=10",
+        "--gtav_native_hold_lost_frames=false",
         "--gtav_native_async_pipelines=true",
-        "--gtav_native_pipeline_wait_ms=25.0",
+        "--gtav_native_pipeline_wait_ms=0.0",
         "--gtav_native_render_scale=1.0",
+        "--gtav_native_max_anisotropy=2",
         "--gtav_native_record_thread=false",
-        "--gtav_native_convert_threads=0",
-        "--gtav_native_texture_recheck_frames=30",
+        "--gtav_native_convert_threads=4",
+        "--gtav_native_texture_recheck_frames=20",
+        "--gtav_native_texture_sample_frames=4",
+        "--gtav_native_exact_barriers=true",
         "--gtav_native_load_clears=false",
+        "--gtav_native_defer_clears=true",
+        "--gtav_native_scissor=true",
+        "--gtav_native_resolve_discard=true",
         "--gtav_native_fence_wait=true",
+        "--gtav_native_fence_copy=true",
+        "--gtav_native_fence_lag=2",
         "--gtav_native_decode_bc=true",
         "--gtav_android_main_prime=true",
         "--xma_flush_streams=true",
+        "--gtav_audio_unsync=true",
         "--audio_maxqframes=32", "--audio_device_frames=512", "--audio_force_stereo=true",
+        "--vulkan_allow_present_mode_immediate=true",
+        "--vulkan_allow_present_mode_mailbox=true",
+        "--vulkan_allow_present_mode_fifo_relaxed=true",
+        "--gtav_touch_controls=true",
+        "--gtav_touch_scale=1.1",
+        "--gtav_touch_inset=0.0",
         "--gtav_native_save_missing_shaders=true",
         "--gtav_native_compile=false",
     };
@@ -161,12 +179,26 @@ public class GameActivity extends SDLActivity {
         String root = files.getAbsolutePath();
         new File(files, "logs").mkdirs();
         ArrayList<String> args = new ArrayList<>();
-        if (new File(files, "data/data_installed.txt").exists()) {
+
+        File dataRoot = new File(files, "data");
+        if (!new File(dataRoot, "data_installed.txt").exists()) {
+            File backupData = new File("/storage/emulated/0/gtav/data_backup/data");
+            if (new File(backupData, "data_installed.txt").exists()) {
+                dataRoot = backupData;
+            } else {
+                File directData = new File("/storage/emulated/0/gtav/data");
+                if (new File(directData, "data_installed.txt").exists()) {
+                    dataRoot = directData;
+                }
+            }
+        }
+
+        if (new File(dataRoot, "data_installed.txt").exists()) {
             // Installed by the setup screen (install.cpp RunDataInstall layout).
             new File(files, "data/user").mkdirs();
-            args.add("--game_data_root=" + root + "/data/game");
-            args.add("--update_data_root=" + root + "/data/update");
-            args.add("--user_data_root=" + root + "/data/user");
+            args.add("--game_data_root=" + dataRoot.getAbsolutePath() + "/game");
+            args.add("--update_data_root=" + dataRoot.getAbsolutePath() + "/update");
+            args.add("--user_data_root=" + files.getAbsolutePath() + "/data/user");
         } else {
             // Developer layout (pushed with adb).
             new File(files, "userdata").mkdirs();
@@ -207,6 +239,11 @@ public class GameActivity extends SDLActivity {
             if (dumpDir.exists()) {
                 args.add("--gtav_native_shader_dump=" + dumpDir.getAbsolutePath());
             }
+        }
+        // If not added from /storage/emulated/0/gtav/spirv, check app files spirv directory
+        File internalSpirv = new File(files, "spirv");
+        if (!args.toString().contains("--gtav_native_spirv_dir=") && internalSpirv.exists()) {
+            args.add("--gtav_native_spirv_dir=" + internalSpirv.getAbsolutePath());
         }
         args.add("--log_file=" + logFile);
         args.add("--log_max_file_size_mb=256");
